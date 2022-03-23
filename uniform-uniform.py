@@ -33,9 +33,10 @@ def symbolic_min_cdf(x: np.ndarray, symbols: tuple[UniformSymbol]) -> np.ndarray
 
     F_A(a) = 1 - prod { (1 - F_k(a))^n_k }, where F_k is the CDF of the k'th symbol
     """
-    product_terms = list((1 - uniform_cdf(x, a, b))**n for (a, b, n) in symbols)
-    reverse_cdf = np.prod(np.asarray(product_terms), axis=0)
-    return 1 - reverse_cdf
+    # sf is survival function = 1 - cdf
+    product_terms = list((scipy.stats.uniform.sf(x, loc=a, scale=b-a))**n for (a, b, n) in symbols)
+    sf = np.prod(np.asarray(product_terms), axis=0)
+    return 1 - sf
 
 
 def symbolic_max_cdf(x: np.ndarray, symbols: tuple[UniformSymbol]) -> np.ndarray:
@@ -43,9 +44,9 @@ def symbolic_max_cdf(x: np.ndarray, symbols: tuple[UniformSymbol]) -> np.ndarray
     The estimator of the maximum parameter of a uniform distribution fitted to
     uniform symbols is given by the expected value of random variable B with CDF:
 
-    F_B(b) = 1 - prod { (F_k(b))^n_k }, where F_k is the CDF of the kth symbol
+    F_B(b) = prod { (F_k(b))^n_k }, where F_k is the CDF of the kth symbol
     """
-    product_terms = list((uniform_cdf(x, a, b))**n for (a, b, n) in symbols)
+    product_terms = list((scipy.stats.uniform.cdf(x, loc=a, scale=b-a))**n for (a, b, n) in symbols)
     return np.prod(np.asarray(product_terms), axis=0)
 
 def calculate_min_max(
@@ -71,30 +72,6 @@ def calculate_min_max(
 def make_axis_values(plot_min: float, plot_max: float, density: float = 10) -> np.ndarray:
     return np.linspace(plot_min, plot_max, round(plot_max - plot_min) * 10)
 
-
-def uniform_density(x: np.ndarray, a: float, b: float) -> np.ndarray:
-    check_uniform_distribution_parameters(a, b)
-    density = np.ones(x.shape) * 1/(b - a)
-    density[x < a] = 0
-    density[x > b] = 0
-    return density
-
-def uniform_cdf(x: np.ndarray | float, a: float, b: float) -> np.ndarray:
-    check_uniform_distribution_parameters(a, b)
-    if isinstance(x, Number):
-        if x <= a:
-            return 0
-        elif x >= b:
-            return 1
-        else:
-            return (x - a) / (b - a)
-    elif isinstance(x, np.ndarray):
-        cdf = (x - a)/(b - a)
-        cdf[x <= a] = 0
-        cdf[x >= b] = 1
-    else:
-        raise TypeError(f"uniform_cdf(): Unsupported type: {type(x)}")
-    return cdf
 
 def plot_uniform_unifom_fitting(symbols: tuple[UniformSymbol]):
     """
@@ -124,8 +101,8 @@ def plot_uniform_unifom_fitting(symbols: tuple[UniformSymbol]):
     ax1.set_ylabel("F(x)")
 
     for (a, b, _) in symbols:
-        ax0.plot(x, uniform_density(x, a, b))
-        ax1.plot(x, uniform_cdf(x, a, b))
+        ax0.plot(x, scipy.stats.uniform.pdf(x, loc=a, scale=b-a))
+        ax1.plot(x, scipy.stats.uniform.cdf(x, loc=a, scale=b-a))
     ax0.stem(mean_A, ax0.get_ylim()[1], linefmt='C5')
     ax0.stem(mean_B, ax0.get_ylim()[1], linefmt='C5')
     ax1.stem(mean_A, ax1.get_ylim()[1], linefmt='C5')
