@@ -35,8 +35,7 @@ def symbolic_min_cdf(x: np.ndarray, symbols: tuple[UniformSymbol]) -> np.ndarray
     """
     # sf is survival function = 1 - cdf
     product_terms = list((scipy.stats.uniform.sf(x, loc=a, scale=b-a))**n for (a, b, n) in symbols)
-    sf = np.prod(np.asarray(product_terms), axis=0)
-    return 1 - sf
+    return 1 - np.prod(np.asarray(product_terms), axis=0)
 
 
 def symbolic_max_cdf(x: np.ndarray, symbols: tuple[UniformSymbol]) -> np.ndarray:
