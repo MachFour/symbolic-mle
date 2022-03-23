@@ -72,7 +72,7 @@ def make_axis_values(plot_min: float, plot_max: float, density: float = 10) -> n
     return np.linspace(plot_min, plot_max, round(plot_max - plot_min) * 10)
 
 
-def plot_uniform_unifom_fitting(symbols: tuple[UniformSymbol]):
+def plot_uniform_uniform_fitting(symbols: tuple[UniformSymbol]):
     """
     Plot distributions of each uniform symbol, then the CDFs of the estimated
     minimum and maximum of a uniform model fitted to the symbols
@@ -168,7 +168,7 @@ def expectation_from_cdf(
 
 
 def main():
-    plot_uniform_unifom_fitting(uniform_symbols)
+    plot_uniform_uniform_fitting(uniform_symbols)
     plt.show()
 
 if __name__ == "__main__":
