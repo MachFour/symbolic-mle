@@ -12,12 +12,13 @@ The test cases are:
 
 # Required software
 
-The software required to run this code is:
+The following software is sufficient to run this code.
+Lower (or higher) versions may also work but are untested.
 
- . Python 3.10 (it may work with Python 3.6+ but untested)
- . NumPy
- . SciPy
- . Matplotlib
+* Python 3.10
+* NumPy 1.22.3
+* SciPy 1.8.0
+* Matplotlib 3.5.1
 
 # Running
 
