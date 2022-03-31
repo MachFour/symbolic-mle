@@ -3,7 +3,7 @@ class NormalSymbol:
         """
         Parameters:
         mu - mean
-        sigma - standard deviation (can be negative)
+        sigma - standard deviation (nonzero; negative values will be rectified)
         n - number of points summarised by symbol
         """
         if sigma == 0:
