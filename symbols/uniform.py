@@ -32,5 +32,3 @@ class UniformSymbol:
                 raise IndexError("index out of range")
         else:
             raise TypeError(f"indices must be integers, not {type(key)}")
-
-
