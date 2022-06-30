@@ -17,7 +17,7 @@ https://doi.org/10.1016/j.jmva.2008.01.020
 In terms of the standard/direct parametrisation (ξ, ω, α), the centred
 parameters are
 μ = ξ + ω*μ_z
-σ^2 = ω^2 * sqrt(1 − μ_z^2)
+σ^2 = ω^2 (1 − μ_z^2)
 γ_1 = (4−π)/2 * μ_z^3 / sqrt((1 - μ_z^2)^3)
 
 where
@@ -34,45 +34,46 @@ The inverse mapping is
 where
 c = (2 γ_1/(4-π))^(1/3)
 μ_z = c/sqrt(1 + c^2)
-δ = sqrt(π/2) * μ_z
+b = sqrt(2/π)
+δ = μ_z/b
 
 
 """
 
 
-def centred_to_direct_parameters(mu, sigma_sq, gamma_1):
+def centred_to_direct_parameters(mu, sigma, gamma_1):
     """
     :param mu: mean parameter for Skew-normal distribution [centred parametrisation]
-    :param sigma_sq: variance parameter for Skew-normal distribution [centred parametrisation]
+    :param sigma: std deviation parameter for Skew-normal distribution [centred parametrisation]
     :param gamma_1: skewness parameter for Skew-normal distribution [centred parametrisation]
     :return: triple representing parameters of same skew-normal distribution under direct parametrisation.
     """
     c = (2*gamma_1 / (4 - np.pi))**(1/3)
+    b = np.sqrt(2/np.pi)
     mu_z = c / np.sqrt(1 + c**2)
-    omega_sq = sigma_sq / (1 - mu_z**2)
-    xi = mu - np.sqrt(omega_sq)*mu_z
-    delta = np.sqrt(np.pi/2) * mu_z
-    delta = np.clip(delta, 0.999, 0.999)
+    delta = np.clip(mu_z/b, 0.999, 0.999)
+    omega = abs(sigma) / np.sqrt(1 - mu_z**2)
+    xi = mu - omega*mu_z
     alpha = delta / np.sqrt(1 - delta**2)
 
-    return xi, omega_sq, alpha
+    return xi, omega, alpha
 
 
-def direct_to_centred_parameters(xi, omega_sq, alpha):
+def direct_to_centred_parameters(xi, omega, alpha):
     """
     :param xi: location parameter for Skew-normal distribution [direct parametrisation]
-    :param omega_sq: scale parameter for Skew-normal distribution [direct parametrisation]
+    :param omega: scale parameter for Skew-normal distribution [direct parametrisation]
     :param alpha: shape parameter for Skew-normal distribution [direct parametrisation]
     :return: triple representing parameters of same skew-normal distribution under centered parametrisation.
     """
     delta = alpha / np.sqrt(1 + alpha**2)
     b = np.sqrt(2/np.pi)
     mu_z = b*delta
-    mu = xi + np.sqrt(omega_sq)*mu_z
-    sigma_sq = omega_sq * (1 - mu_z**2)
+    mu = xi + omega*mu_z
+    sigma = omega * np.sqrt(1 - mu_z**2)
     gamma_1 = (4 - np.pi)/2 * (mu_z**3 / (1 - mu_z**2)**(3/2))
 
-    return mu, sigma_sq, gamma_1
+    return mu, sigma, gamma_1
 
 
 class skew_norm_centered_gen(stats.rv_continuous):
@@ -87,14 +88,12 @@ class skew_norm_centered_gen(stats.rv_continuous):
         return np.isfinite(g_1)
 
     def _pdf(self, x, g_1):
-        xi, omega_sq, a = centred_to_direct_parameters(0, 1, g_1)
-        omega = np.sqrt(omega_sq)
+        xi, omega, a = centred_to_direct_parameters(0, 1, g_1)
         z = (x - xi) / omega
         return 2/omega * _norm_pdf(z)*_norm_cdf(a*z)
 
     def _logpdf(self, x, g_1):
-        xi, omega_sq, a = centred_to_direct_parameters(0, 1, g_1)
-        omega = np.sqrt(omega_sq)
+        xi, omega, a = centred_to_direct_parameters(0, 1, g_1)
         z = (x - xi) / omega
         return np.log(2) - np.log(omega) + _norm_logpdf(z) + _norm_logcdf(a*z)
 
@@ -111,18 +110,16 @@ class skew_norm_centered_gen(stats.rv_continuous):
             cdf = 1.0
         return cdf
 
-    def _sf(self, x, g_1):
-        xi, omega_sq, a = centred_to_direct_parameters(0, 1, g_1)
-        return stats.skewnorm._cdf(-x, -a)
 
+    # TODO not valid
     def _rvs(self, g_1, size=None, random_state=None):
         u0 = random_state.normal(size=size)
         v = random_state.normal(size=size)
 
-        xi, omega_sq, a = centred_to_direct_parameters(0, 1, g_1)
+        xi, omega, a = centred_to_direct_parameters(0, 1, g_1)
         d = a/np.sqrt(1 + a**2)
         u1 = d*u0 + v*np.sqrt(1 - d**2)
-        return xi + np.sqrt(omega_sq)*np.where(u0 >= 0, u1, -u1)
+        return xi + omega*np.where(u0 >= 0, u1, -u1)
 
     def _stats(self, a, moments='mvsk'):
         output = [None, None, None, None]
@@ -148,7 +145,7 @@ def main():
     omega_0 = 1
     alpha_0 = 1
 
-    mu_0, sigma_sq_0, gamma_1_0 = direct_to_centred_parameters(xi_0, omega_0**2, alpha_0)
+    mu_0, sigma_0, gamma_1_0 = direct_to_centred_parameters(xi_0, omega_0, alpha_0)
     test_dp = stats.skewnorm(alpha_0, loc=xi_0, scale=omega_0)
 
     samples = test_dp.rvs(10000)
@@ -162,14 +159,14 @@ def main():
     fit_alpha, fit_xi, fit_omega = test_dp_fit[:]
     fit_gamma1, fit_mu, fit_sigma = test_cp_fit[:]
 
-    exp_mu, exp_sigma_sq, exp_gamma_1 = direct_to_centred_parameters(fit_xi, fit_omega**2, fit_alpha)
-    back_xi, back_omega_sq, back_alpha = centred_to_direct_parameters(fit_mu, fit_sigma**2, fit_gamma1)
+    exp_mu, exp_sigma, exp_gamma_1 = direct_to_centred_parameters(fit_xi, fit_omega, fit_alpha)
+    back_xi, back_omega, back_alpha = centred_to_direct_parameters(fit_mu, fit_sigma, fit_gamma1)
 
     print(f"True DP parameters: xi={xi_0}, omega={omega_0}, alpha={alpha_0}")
 
     print(f"True CP parameters:",
           f"mu={mu_0:.3f},",
-          f"sigma={np.sqrt(sigma_sq_0):.3f},",
+          f"sigma={sigma_0:.3f},",
           f"gamma_1={gamma_1_0}")
 
     print(f"Fitted DP parameters:",
@@ -179,7 +176,7 @@ def main():
 
     print(f"Expected CP parameters from DP fit:",
           f"mu={exp_mu:.3f},"
-          f"sigma={np.sqrt(exp_sigma_sq):.3f},"
+          f"sigma={exp_sigma:.3f},"
           f"gamma_1={exp_gamma_1:.3f}")
 
     print(f"Fitted CP parameters:",
@@ -189,7 +186,7 @@ def main():
 
     print(f"Backconverted fitted CP->DP parameters:",
           f"xi={back_xi:.3f},"
-          f"omega={np.sqrt(back_omega_sq):.3f},"
+          f"omega={back_omega:.3f},"
           f"alpha={back_alpha:.3f}")
 
 

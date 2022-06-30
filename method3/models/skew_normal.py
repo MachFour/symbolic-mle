@@ -99,11 +99,10 @@ def normal_symbols_mle(symbols: tuple[NormalSymbol]) -> float:
 
 def main():
     uniform_symbols = (
-        UniformSymbol(0, 10, 100),
-        UniformSymbol(1, 20, 50),
-        UniformSymbol(50, 71, 50)
+        UniformSymbol(0, 10, 10),
+        UniformSymbol(1, 200, 25),
     )
-    uniform_symbols_mle(uniform_symbols, 100)
+    uniform_symbols_mle(uniform_symbols, 10)
 
 
 if __name__ == "__main__":
