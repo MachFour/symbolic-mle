@@ -41,15 +41,18 @@ b = sqrt(2/π)
 """
 
 
-def centred_to_direct_parameters(mu, sigma, gamma_1):
+def centred_to_direct_parameters(mu, sigma, gamma_1) -> tuple[float, float, float]:
     """
     :param mu: mean parameter for Skew-normal distribution [centred parametrisation]
     :param sigma: std deviation parameter for Skew-normal distribution [centred parametrisation]
     :param gamma_1: skewness parameter for Skew-normal distribution [centred parametrisation]
     :return: triple representing parameters of same skew-normal distribution under direct parametrisation.
     """
-    c = (2*gamma_1 / (4 - np.pi))**(1/3)
+    if abs(gamma_1) > 1.0:
+        return np.nan, np.nan, np.nan
+
     b = np.sqrt(2/np.pi)
+    c = np.cbrt(2*gamma_1 / (4 - np.pi))
     mu_z = c / np.sqrt(1 + c**2)
     delta = np.clip(mu_z/b, -0.999, 0.999)
     omega = abs(sigma) / np.sqrt(1 - mu_z**2)
@@ -83,9 +86,13 @@ class skew_norm_centered_gen(stats.rv_continuous):
 
     """
 
-    # gamma_1 is skewness parameter
+    # gamma_1 is skewness parameter,
+    # Max value of delta is 1, so if b = sqrt(2/pi), then
+    # c = b / sqrt(1 - b^2)
+    # g_max = c**3 * (4 - pi) / 2 = 0.9952717464311568
+
     def _argcheck(self, g_1):
-        return np.isfinite(g_1)
+        return abs(g_1) <= 0.9952717464311568
 
     def _pdf(self, x, g_1):
         xi, omega, a = centred_to_direct_parameters(0, 1, g_1)
@@ -110,8 +117,16 @@ class skew_norm_centered_gen(stats.rv_continuous):
             cdf = 1.0
         return cdf
 
+    def _fitstart(self, data, args=None):
+        """Starting point for fit (shape arguments + loc + scale)."""
+        if args is None:
+            skewness = stats.skew(data, bias=False)
+            args = (skewness,)*self.numargs
+        loc, scale = self._fit_loc_scale_support(data, *args)
+        return args + (loc, scale)
 
-    def _rvs(self, g_1, size=None, random_state=None):
+    def _rvs(self, *args, size=None, random_state=None):
+        g_1 = args[0] if len(args) > 1 else 0
         xi, omega, a = centred_to_direct_parameters(0, 1, g_1)
         return stats.skewnorm.rvs(a, loc=xi, scale=omega, size=size, random_state=random_state)
 
@@ -182,14 +197,6 @@ def main():
           f"xi={back_xi:.3f},"
           f"omega={back_omega:.3f},"
           f"alpha={back_alpha:.3f}")
-
-
-def main2():
-    xi = -1.325700815100011
-    omega = 1.6605669667787666
-    alpha = 22.343905770087243
-
-    print(direct_to_centred_parameters(xi, omega, alpha))
 
 
 if __name__ == "__main__":
