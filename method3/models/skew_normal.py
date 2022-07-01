@@ -1,55 +1,36 @@
 """
 Fitting a skew-normal distribution by MLE parameter estimation to symbols
 
-Mean
+Since the MLE for a skew-normal distribution is not known in closed form,
+a simulation-based method is used.
 
-The estimator of the mean parameter of a normal distribution in terms
-of symbol distributions is given by the weighted sum of expected values of each symbol distribution:
-
-mu_S = sum { n_k/N * m_k } where m_k is the expected value of distribution F_k,
-and n_k is the number of points in the symbol
-
-----------------------------------------------------------------
-
-Variance
-
-The estimator of the variance parameter of a normal distribution
-in terms of symbol distributions is given by the following weighted sum:
-
-s^2_s = sum { n_k/N * ((1 - 1/N) s^2_k + (m_k - m)^2) }
-where n_k is the number of points in the symbol, m_k and s^2_k are respectively
-the mean and variance of F_k, and m is the symbolic mean (see above)
-
-NOTE: this estimator is a little bit biased, just like the usual MLE of variance
-for a normal distribution.
 """
+
+from typing import Callable
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.stats import skew, skewnorm, uniform
+from scipy.stats import skew, skewnorm, uniform, norm
 
 from centred_skew_normal import skewnorm_centered
 from symbols.normal import NormalSymbol
 from symbols.uniform import UniformSymbol
 
+SimFunc = Callable[[], np.ndarray]
 
-def uniform_symbols_mle(symbols: tuple[UniformSymbol, ...], sim_reps: int = 1000, use_centered: bool = True) -> float:
-    """Returns a triple representing the MLE of skew-normal parameters
-    for the given Uniform symbols
-    The parametrisation used is location (ξ), scale (ω), shape (α)
-    https://en.wikipedia.org/wiki/Skew_normal_distribution
 
-    Since there is no closed-form MLE for the skew normal distribution,
-    a simulation-based method is used.
+def fit_to_data(generate_data: SimFunc, reps: int, use_centered_sn: bool = True) -> np.ndarray:
     """
+    Simulates data using the given function and returns the average of ML parameter estimates
+    for a univariate skew-normal distribution across all simulations.
+    https://en.wikipedia.org/wiki/Skew_normal_distribution
+    """
+    simulation_mles = np.zeros((reps, 3))
+    for i in range(reps):
+        data = generate_data()
 
-    simulation_mles = np.zeros((sim_reps, 3))
-    for i in range(sim_reps):
-        # simulate points from the symbol distributions
-        sim_data = np.hstack(list(uniform.rvs(loc=s.a, scale=s.b - s.a, size=s.n) for s in symbols))
-
-        if use_centered:
-            sim_mle = skewnorm_centered.fit(sim_data)
+        if use_centered_sn:
+            sim_mle = skewnorm_centered.fit(data)
 
             print(f"γ_1^: {sim_mle[0]:7.3f},",
                   f"μ^ = {sim_mle[1]:7.3f},",
@@ -60,7 +41,7 @@ def uniform_symbols_mle(symbols: tuple[UniformSymbol, ...], sim_reps: int = 1000
             # Use method of moments to derive initial estimate for shape (alpha) parameter to skew normal distribution
             # this requires inverting the population skewness equation, which depends only on alpha.
 
-            skewness = skew(sim_data, bias=False)
+            skewness = skew(data, bias=False)
             # abs(delta) = sqrt(pi/2 * abs(skewness)^(2/3) / (abs(skewness)^(2/3) + (2 - pi/2)^(2/3))
             # sign(delta) = sign(skewness)
             sk23 = abs(skewness)**(2/3)
@@ -68,7 +49,7 @@ def uniform_symbols_mle(symbols: tuple[UniformSymbol, ...], sim_reps: int = 1000
             delta_magnitude = np.sqrt(pi_2 * sk23 / (sk23 + (2 - pi_2)**(2/3)))
             delta_estimate = np.clip(np.sign(skewness) * delta_magnitude, -0.99, 0.99)
             alpha_estimate = delta_estimate / np.sqrt(1 - delta_estimate**2)
-            sim_mle = skewnorm.fit(sim_data)  # no initial guess
+            sim_mle = skewnorm.fit(data)  # no initial guess
             alpha_mle = sim_mle[0]
 
             dont_use = abs(alpha_estimate) < 1e3 and abs(alpha_mle / alpha_estimate) > 1e4
@@ -83,11 +64,23 @@ def uniform_symbols_mle(symbols: tuple[UniformSymbol, ...], sim_reps: int = 1000
             #  -> if alpha_estimate < 1e4 and abs(alpha_mle / alpha_estimate) > 1e4
             simulation_mles[i, :] = np.nan * np.ones((1, 3)) if dont_use else sim_mle
 
-    print(simulation_mles.shape)
-    overall_mle = np.nanmean(simulation_mles, 0)
+    return np.nanmean(simulation_mles, 0)
+
+
+def uniform_symbols_mle(symbols: tuple[UniformSymbol, ...], sim_reps: int = 1000, use_centered: bool = True) -> float:
+    def sim_func() -> np.ndarray:
+        # simulate points from the symbol distributions
+        return np.hstack(list(uniform.rvs(loc=s.a, scale=s.b - s.a, size=s.n) for s in symbols))
+
+    mle = fit_to_data(sim_func, sim_reps, use_centered)
     # plot the distribution and points
-    x = np.linspace(0, 1.5*max(s.b for s in symbols), 100)
-    shape, loc, scale = overall_mle[:]
+    symbols_min = min(s.a for s in symbols)
+    symbols_max = max(s.b for s in symbols)
+    plot_mid = (symbols_min + symbols_max) / 2
+    plot_half_length = (symbols_max - symbols_min) / 2 * 1.5
+
+    x = np.linspace(plot_mid - plot_half_length, plot_mid + plot_half_length, round(plot_half_length*10))
+    shape, loc, scale = mle[:]
     if use_centered:
         y = skewnorm_centered.pdf(x, shape, loc=loc, scale=scale)
     else:
@@ -103,20 +96,59 @@ def uniform_symbols_mle(symbols: tuple[UniformSymbol, ...], sim_reps: int = 1000
         plt.stem(stem_data_x, stem_data_y, linefmt='r-', markerfmt='ro')
     plt.plot(x, y)
 
-    print(overall_mle)
+    print(mle)
     plt.show()
 
 
-def normal_symbols_mle(symbols: tuple[NormalSymbol]) -> float:
-    pass
+def normal_symbols_mle(symbols: tuple[NormalSymbol, ...], sim_reps: int = 1000, use_centered: bool = True) -> float:
+    def sim_func() -> np.ndarray:
+        # simulate points from the symbol distributions
+        return np.hstack(list(norm.rvs(loc=s.mu, scale=s.sigma, size=s.n) for s in symbols))
+
+    mle = fit_to_data(sim_func, sim_reps, use_centered)
+    # plot the distribution and points
+    symbols_min = min(s.mu - 3*s.sigma for s in symbols)
+    symbols_max = max(s.mu + 3*s.sigma for s in symbols)
+    plot_mid = (symbols_min + symbols_max) / 2
+    plot_half_length = (symbols_max - symbols_min) / 2 * 1.5
+
+    x = np.linspace(plot_mid - plot_half_length, plot_mid + plot_half_length, round(plot_half_length*10))
+    shape, loc, scale = mle[:]
+    if use_centered:
+        y = skewnorm_centered.pdf(x, shape, loc=loc, scale=scale)
+    else:
+        y = skewnorm.pdf(x, shape, loc=loc, scale=scale)
+
+    N = sum(s.n for s in symbols)
+    for (mu, sigma, n) in symbols:
+        stem_data_y = norm.pdf(x, loc=mu, scale=sigma) * n / N
+        plt.plot(x, stem_data_y, 'r-')
+    plt.plot(x, y)
+
+    print(mle)
+    plt.show()
 
 
 def main():
-    uniform_symbols = (
-        UniformSymbol(1, 20, 20),
-        UniformSymbol(49, 60, 10),
+    uniform_symbols_1 = (
+        UniformSymbol(1, 2, 20),
+        UniformSymbol(4, 6, 10),
+        UniformSymbol(14, 16, 60),
     )
-    uniform_symbols_mle(uniform_symbols, 10)
+    # this one causes a flip of the skewness sign
+    uniform_symbols_2 = (
+        UniformSymbol(1, 2, 20),
+        UniformSymbol(4, 6, 10),
+        UniformSymbol(14, 16, 600),
+    )
+    #uniform_symbols_mle(uniform_symbols_1, 10)
+
+    normal_symbols_1 = (
+        NormalSymbol(30, 10, 10),
+        NormalSymbol(100, 10, 70),
+        NormalSymbol(-10, 2, 1),
+    )
+    normal_symbols_mle(normal_symbols_1, 10)
 
 
 if __name__ == "__main__":
