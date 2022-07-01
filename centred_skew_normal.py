@@ -94,15 +94,27 @@ class skew_norm_centered_gen(stats.rv_continuous):
     def _argcheck(self, g_1):
         return abs(g_1) <= 0.9952717464311568
 
-    def _pdf(self, x, g_1):
-        xi, omega, a = centred_to_direct_parameters(0, 1, g_1)
+    @staticmethod
+    def _make_pdf_args(x, g_1):
+        if np.isscalar(g_1):
+            mu, sigma = 0, 1
+            centre_params = centred_to_direct_parameters
+        else:
+            mu = np.zeros(g_1.shape)
+            sigma = np.ones(g_1.shape)
+            centre_params = np.vectorize(centred_to_direct_parameters)
+
+        xi, omega, a = centre_params(mu, sigma, g_1)
         z = (x - xi) / omega
+        return z, omega, a
+
+    def _pdf(self, x, g_1):
+        z, omega, a = self._make_pdf_args(x, g_1)
         return 2/omega * _norm_pdf(z)*_norm_cdf(a*z)
 
     def _logpdf(self, x, g_1):
-        xi, omega, a = centred_to_direct_parameters(0, 1, g_1)
-        z = (x - xi) / omega
-        return np.log(2) - np.log(omega) + _norm_logpdf(z) + _norm_logcdf(a*z)
+        z, omega, a = self._make_pdf_args(x, g_1)
+        return np.log(2/omega) + _norm_logpdf(z) + _norm_logcdf(a*z)
 
     def _cdf_single(self, x, *args):
         _a, _b = self._get_support(*args)
@@ -117,13 +129,11 @@ class skew_norm_centered_gen(stats.rv_continuous):
             cdf = 1.0
         return cdf
 
-    def _fitstart(self, data, args=None):
+    def _fitstart(self, data):
         """Starting point for fit (shape arguments + loc + scale)."""
-        if args is None:
-            skewness = stats.skew(data, bias=False)
-            args = (skewness,)*self.numargs
-        loc, scale = self._fit_loc_scale_support(data, *args)
-        return args + (loc, scale)
+        skewness = np.clip(stats.skew(data, bias=False), 0.99, 0.99)
+        loc, scale = self._fit_loc_scale_support(data, skewness)
+        return skewness, loc, scale
 
     def _rvs(self, *args, size=None, random_state=None):
         g_1 = args[0] if len(args) > 1 else 0
