@@ -51,7 +51,7 @@ def centred_to_direct_parameters(mu, sigma, gamma_1):
     c = (2*gamma_1 / (4 - np.pi))**(1/3)
     b = np.sqrt(2/np.pi)
     mu_z = c / np.sqrt(1 + c**2)
-    delta = np.clip(mu_z/b, 0.999, 0.999)
+    delta = np.clip(mu_z/b, -0.999, 0.999)
     omega = abs(sigma) / np.sqrt(1 - mu_z**2)
     xi = mu - omega*mu_z
     alpha = delta / np.sqrt(1 - delta**2)
@@ -111,15 +111,9 @@ class skew_norm_centered_gen(stats.rv_continuous):
         return cdf
 
 
-    # TODO not valid
     def _rvs(self, g_1, size=None, random_state=None):
-        u0 = random_state.normal(size=size)
-        v = random_state.normal(size=size)
-
         xi, omega, a = centred_to_direct_parameters(0, 1, g_1)
-        d = a/np.sqrt(1 + a**2)
-        u1 = d*u0 + v*np.sqrt(1 - d**2)
-        return xi + omega*np.where(u0 >= 0, u1, -u1)
+        return stats.skewnorm.rvs(a, loc=xi, scale=omega, size=size, random_state=random_state)
 
     def _stats(self, a, moments='mvsk'):
         output = [None, None, None, None]
@@ -188,6 +182,14 @@ def main():
           f"xi={back_xi:.3f},"
           f"omega={back_omega:.3f},"
           f"alpha={back_alpha:.3f}")
+
+
+def main2():
+    xi = -1.325700815100011
+    omega = 1.6605669667787666
+    alpha = 22.343905770087243
+
+    print(direct_to_centred_parameters(xi, omega, alpha))
 
 
 if __name__ == "__main__":
