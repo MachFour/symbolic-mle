@@ -18,7 +18,7 @@ def make_order_statistic_symbolic_likelihood(
     when class summaries are order statistics (min and max are special case)
 
     This function can be used to create a 1D symbolic likelihood function per class,
-    which can then
+    which can then be used to evaluate the symbolic likelihood for desired model parameters.
 
     :param lower_statistic_value: Observed summary value for lower order statistic
     :param lower_statistic_ordinal: Position of lower order statistic, between 1 and n
@@ -30,7 +30,10 @@ def make_order_statistic_symbolic_likelihood(
     :param log: Whether to make a log-likelihood function rather than ordinary one. This
         should be combined with other classes' log-likelihoods via summation rather than
         multiplication
-    :return: Function returning symbolic likelihood of model evaluated at given points
+    :return: Function returning symbolic likelihood function for a Gaussian(μ, σ) distribution.
+        This can be maximised or evaluated at model parameters of interest. Note σ is not squared.
+
+
     """
 
     # L_k(θ, s, n) = G(s_l; θ)^(l-1) * [G(s_u; θ) - G(s_l; θ)]^(u - l - 1) * (1 - G(s_u; θ))^(n-u) g(s_u); θ) g(s_l); θ)
@@ -46,7 +49,7 @@ def make_order_statistic_symbolic_likelihood(
 
     n = class_size
     l, u = lower_statistic_ordinal, upper_statistic_ordinal
-    s_l, s_u = lower_statistic_ordinal, upper_statistic_value
+    s_l, s_u = lower_statistic_value, upper_statistic_value
 
     if not (1 <= l < u <= n):
         raise ValueError("Must have 1 <= lower statistic order < upper statistic order <= class size")

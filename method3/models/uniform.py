@@ -23,9 +23,9 @@ F_B(b) = prod { (F_k(b))^n_k }, where F_k is the CDF of the kth symbol
 import numpy as np
 from scipy.stats import norm, uniform
 
+from helper.utils import expectation_from_cdf
 from symbols.normal import NormalSymbol
 from symbols.uniform import UniformSymbol
-from utils import expectation_from_cdf
 
 
 def uniform_symbol_min_cdf(x: np.ndarray, symbols: tuple[UniformSymbol]) -> np.ndarray:

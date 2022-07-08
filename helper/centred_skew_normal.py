@@ -181,32 +181,32 @@ def main():
     exp_mu, exp_sigma, exp_gamma_1 = direct_to_centred_parameters(fit_xi, fit_omega, fit_alpha)
     back_xi, back_omega, back_alpha = centred_to_direct_parameters(fit_mu, fit_sigma, fit_gamma1)
 
-    print(f"True DP parameters: xi={xi_0}, omega={omega_0}, alpha={alpha_0}")
+    print(f"True DP parameters: ξ={xi_0}, ω={omega_0}, α={alpha_0}")
 
     print(f"True CP parameters:",
-          f"mu={mu_0:.3f},",
-          f"sigma={sigma_0:.3f},",
-          f"gamma_1={gamma_1_0}")
+          f"μ={mu_0:.3f},",
+          f"σ={sigma_0:.3f},",
+          f"γ_1={gamma_1_0}")
 
     print(f"Fitted DP parameters:",
-          f"xi={fit_xi:.3f},"
-          f"omega={fit_omega:.3f},"
-          f"alpha={fit_alpha:.3f}")
+          f"ξ={fit_xi:.3f},"
+          f"ω={fit_omega:.3f},"
+          f"α={fit_alpha:.3f}")
 
     print(f"Expected CP parameters from DP fit:",
-          f"mu={exp_mu:.3f},"
-          f"sigma={exp_sigma:.3f},"
-          f"gamma_1={exp_gamma_1:.3f}")
+          f"μ={exp_mu:.3f},"
+          f"σ={exp_sigma:.3f},"
+          f"γ_1={exp_gamma_1:.3f}")
 
     print(f"Fitted CP parameters:",
-          f"mu={fit_mu:.3f},"
-          f"sigma={fit_sigma:.3f},"
-          f"gamma_1={fit_gamma1:.3f}")
+          f"μ={fit_mu:.3f},"
+          f"σ={fit_sigma:.3f},"
+          f"γ_1={fit_gamma1:.3f}")
 
     print(f"Backconverted fitted CP->DP parameters:",
-          f"xi={back_xi:.3f},"
-          f"omega={back_omega:.3f},"
-          f"alpha={back_alpha:.3f}")
+          f"ξ={back_xi:.3f},"
+          f"ω={back_omega:.3f},"
+          f"α={back_alpha:.3f}")
 
 
 if __name__ == "__main__":

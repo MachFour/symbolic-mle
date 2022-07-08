@@ -35,7 +35,7 @@ def expectation_from_cdf(
     if lower_limit >= 0:
         # noinspection PyTupleAssignmentBalance
         positive_part, _ = quad(lambda x: 1 - cdf(x), lower_limit, upper_limit)
-    elif lower_limit < 0 and upper_limit > 0:
+    elif lower_limit < 0 < upper_limit:
         # noinspection PyTupleAssignmentBalance
         positive_part, _ = quad(lambda x: 1 - cdf(x), 0, upper_limit)
     else:  # upper_limit <= 0:
@@ -44,7 +44,7 @@ def expectation_from_cdf(
     if upper_limit <= 0:
         # noinspection PyTupleAssignmentBalance,PyTypeChecker
         negative_part, _ = quad(cdf, lower_limit, upper_limit)
-    elif lower_limit < 0 and upper_limit > 0:
+    elif lower_limit < 0 < upper_limit:
         # noinspection PyTupleAssignmentBalance,PyTypeChecker
         negative_part, _ = quad(cdf, lower_limit, 0)
     else:  # lower_limit >= 0:

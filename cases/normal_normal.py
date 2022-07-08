@@ -2,10 +2,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import norm
 
+from helper.utils import make_axis_values
 from method3.models.normal import normal_symbols_variance_mle, normal_symbols_mean_mle
 from method3.models.uniform import normal_symbols_heuristic_min_max
 from symbols.normal import NormalSymbol
-from utils import make_axis_values
 
 
 def plot_normal_normal_fitting(symbols: tuple[NormalSymbol], method: int):
