@@ -12,8 +12,8 @@ def main():
     method = 3
 
     # Uncomment whichever one is of interest
-    # uniform_normal(method=method)
-    uniform_uniform(method=method)
+    uniform_normal(method=method)
+    # uniform_uniform(method=method)
     # normal_uniform(method=method)
     # normal_normal(method=method)
 
