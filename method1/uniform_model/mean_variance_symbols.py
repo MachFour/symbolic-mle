@@ -1,9 +1,9 @@
-from typing import Callable, Iterable
+from typing import Iterable
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.stats import uniform, norm
-
+from mpl_toolkits.mplot3d import Axes3D
+from scipy.stats import norm
 
 # generates points on the intersection of the n-hypersphere of radius r,
 # intersected with the hyperplane of x_1 + ... + x_n = 0
@@ -15,7 +15,9 @@ def generate_points(samples: int, n: int, r: float, plot: bool = False) -> np.nd
     # Each sample forms 1 column
     x = norm.rvs(size=(n, samples))
     # normalise columns to have L2 norm of 2
-    y = x / np.linalg.norm(x, axis=0, keepdims=True)
+    # ACTUALLY THIS IS NOT NEEDED
+    #y = x / np.linalg.norm(x, axis=0, keepdims=True)
+    y = x
     # project onto plane through origin perpendicular to (1, 1, ..., 1) (normalised)
     normal_vector = np.ones((n, 1)) / np.sqrt(n)
     # take dot product with normal vector (1/sqrt(n) * vector of ones)
@@ -28,9 +30,9 @@ def generate_points(samples: int, n: int, r: float, plot: bool = False) -> np.nd
     v = z / np.linalg.norm(z, axis=0, keepdims=True) * r
 
     if plot:
-        fig: plt.Figure = plt.figure(dpi=200)
+        fig: plt.Figure = plt.figure(figsize=(10, 10), dpi=200)
         if n == 3:
-            ax: plt.Axes = fig.add_subplot(projection="3d")
+            ax: Axes3D = fig.add_subplot(projection="3d")
             ax.scatter(v[0, :], v[1, :], v[2, :])
         elif n == 2:
             ax: plt.Axes = fig.add_subplot()
@@ -41,6 +43,7 @@ def generate_points(samples: int, n: int, r: float, plot: bool = False) -> np.nd
     return v
 
 
+
 def mean_variance_class_likelihood(
     class_mu: float,
     class_sigma: float,
@@ -48,7 +51,7 @@ def mean_variance_class_likelihood(
     a: float,
     b: float,
     log: bool = False,
-    num_samples: int = 100,
+    num_samples: int = 10000,
 ) -> float:
     """
     Adapted from https://gitlab.com/machfour/thesis-scripts/-/blob/master/uniform-normal-comparison.R
@@ -62,6 +65,9 @@ def mean_variance_class_likelihood(
     :param num_samples: Number of Monte-Carlo simulation samples to use
     :return:
     """
+    if b <= a:
+        return -np.inf
+
     # assumes a < b
     m = class_mu
     s = np.abs(class_sigma)
@@ -85,13 +91,16 @@ def mean_variance_class_likelihood(
         # all points will lie in the sphere
         integral_approx = 1
     else:
-        points = generate_points(num_samples, n_k, n_k)
+        points = generate_points(num_samples, n_k, np.sqrt(n_k))
         # determine which points/samples lie in the [a_dash, b_dash] hypercube
         # equivalent to checking if all coordinates in each column lie in [a_dash, b_dash]
         points_in_hypercube = np.logical_and(a_dash <= points, points <= b_dash).all(axis=0)
         integral_approx = sum(points_in_hypercube) / num_samples
 
     if log:
+        if integral_approx == 0:
+            # return -np.inf
+            return -1e16  # make it easier for optimisation functions
         return np.log(integral_approx) - n_k * np.log(b - a)
     else:
         return integral_approx / (b - a) ** n_k
@@ -102,14 +111,18 @@ def mean_variance_symbolic_likelihood(
     a: float,
     b: float,
     log: bool = False,
-    num_samples: int = 100,
+    mc_samples_per_class: int = 10000,
 ) -> float:
-    
+    log_likelihood = sum(
+        mean_variance_class_likelihood(mu, sigma, n, a, b, log=True, num_samples=mc_samples_per_class)
+        for (mu, sigma, n) in symbols
+    )
 
+    return log_likelihood if log else np.exp(log_likelihood)
 
 
 def main():
-    generate_points(2000, 3, 9, plot=True)
+    generate_points(100, 3, 1, plot=True)
     plt.show()
 
 

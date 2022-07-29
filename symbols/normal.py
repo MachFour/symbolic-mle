@@ -1,11 +1,14 @@
+# noinspection DuplicatedCode
+
 class NormalSymbol:
+    """
+    Parameters:
+    mu - mean
+    sigma - standard deviation (nonzero; negative values will be rectified)
+    n - number of points summarised by symbol
+    """
+
     def __init__(self, mu: float, sigma: float, n: int):
-        """
-        Parameters:
-        mu - mean
-        sigma - standard deviation (nonzero; negative values will be rectified)
-        n - number of points summarised by symbol
-        """
         if sigma == 0:
             raise ValueError("sigma cannot be zero")
         elif sigma < 0:

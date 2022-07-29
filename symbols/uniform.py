@@ -1,3 +1,5 @@
+# noinspection DuplicatedCode
+
 class UniformSymbol:
     """
     Parameters:

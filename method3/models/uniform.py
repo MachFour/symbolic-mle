@@ -51,22 +51,22 @@ def normal_symbol_max_cdf(x: np.ndarray, symbols: tuple[NormalSymbol]) -> np.nda
 
 
 def uniform_symbol_min_mle(symbols: tuple[UniformSymbol]) -> float:
-    x_min, x_max = uniform_symbols_heuristic_min_max(symbols, expand_factor=1.2)
+    x_min, x_max = uniform_symbols_heuristic_min_max(symbols, expand_factor=1.3)
     return expectation_from_cdf(lambda x: uniform_symbol_min_cdf(x, symbols), x_min, x_max)
 
 
 def uniform_symbol_max_mle(symbols: tuple[UniformSymbol]) -> float:
-    x_min, x_max = uniform_symbols_heuristic_min_max(symbols, expand_factor=1.2)
+    x_min, x_max = uniform_symbols_heuristic_min_max(symbols, expand_factor=1.3)
     return expectation_from_cdf(lambda x: uniform_symbol_max_cdf(x, symbols), x_min, x_max)
 
 
 def normal_symbol_min_mle(symbols: tuple[NormalSymbol]) -> float:
-    x_min, x_max = normal_symbols_heuristic_min_max(symbols, expand_factor=1.2)
+    x_min, x_max = normal_symbols_heuristic_min_max(symbols, expand_factor=1.3)
     return expectation_from_cdf(lambda x: normal_symbol_min_cdf(x, symbols), x_min, x_max)
 
 
 def normal_symbol_max_mle(symbols: tuple[NormalSymbol]) -> float:
-    x_min, x_max = normal_symbols_heuristic_min_max(symbols, expand_factor=1.2)
+    x_min, x_max = normal_symbols_heuristic_min_max(symbols, expand_factor=1.3)
     return expectation_from_cdf(lambda x: normal_symbol_max_cdf(x, symbols), x_min, x_max)
 
 

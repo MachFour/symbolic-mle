@@ -1,5 +1,6 @@
 from typing import Callable
 
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import quad
 
@@ -51,3 +52,36 @@ def expectation_from_cdf(
         negative_part = 0
 
     return positive_part - negative_part
+
+
+def maximise_in_grid(
+        func,
+        a_bounds: tuple[float, float],
+        b_bounds: tuple[float, float],
+        grid_size: int,
+        plot: bool = False
+) -> tuple[float, float, float]:
+    a_range = np.linspace(*a_bounds, num=grid_size)
+    b_range = np.linspace(*b_bounds, num=grid_size)
+
+    a_grid, b_grid = np.meshgrid(a_range, b_range)
+    func_values = np.zeros(a_grid.shape)
+    for i in range(func_values.shape[0]):
+        for j in range(func_values.shape[1]):
+            func_values[i, j] = func(a_grid[i, j], b_grid[i, j])
+
+    if plot:
+        fig2: plt.Figure = plt.figure(figsize=(10, 10))
+        ax: plt.Axes = fig2.add_subplot()
+        ax.set_xlabel("a")
+        ax.set_ylabel("b")
+        ax.pcolormesh(a_grid, b_grid, func_values, shading='nearest')
+
+    max_value = np.max(func_values)
+    max_index = np.argmax(func_values)
+    max_a = a_grid.flat[max_index]
+    max_b = b_grid.flat[max_index]
+
+    return max_value, max_a, max_b
+
+
