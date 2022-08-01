@@ -1,13 +1,15 @@
+from typing import Iterable
+
 import matplotlib.pyplot as plt
 from scipy.stats import uniform
 
 from helper.utils import make_axis_values
 from method3.models.uniform import uniform_symbol_min_cdf, uniform_symbol_max_cdf, \
-    uniform_symbol_min_mle, uniform_symbol_max_mle, uniform_symbols_heuristic_min_max
-from symbols.uniform import UniformSymbol
+    uniform_symbol_min_mle, uniform_symbol_max_mle
+from symbols.uniform import UniformSymbol, uniform_symbols_heuristic_min_max
 
 
-def plot_uniform_uniform_fitting(symbols: tuple[UniformSymbol], method: int):
+def plot_uniform_uniform_fitting(symbols: Iterable[UniformSymbol], method: int):
     """
     Plot distributions of each uniform symbol, then the CDFs of the estimated
     minimum and maximum of a uniform model fitted to the symbols

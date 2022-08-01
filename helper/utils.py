@@ -9,6 +9,15 @@ def make_axis_values(plot_min: float, plot_max: float, density: float = 10) -> n
     return np.linspace(plot_min, plot_max, round((plot_max - plot_min) * density))
 
 
+def expand_interval(left: float, right: float, expand_factor: float) -> tuple[float, float]:
+    if left > right:
+        raise ValueError(f"Cannot have left end of interval greater than right end ({left} > {right})")
+    mid = (left + right) / 2
+    half_length = (right - left) / 2 * expand_factor
+
+    return mid - half_length, mid + half_length
+
+
 def expectation_from_cdf(
         cdf: Callable[[np.ndarray], np.ndarray],
         lower_limit: float = -np.Infinity,
@@ -61,6 +70,8 @@ def maximise_in_grid(
         grid_size: int,
         plot: bool = False
 ) -> tuple[float, float, float]:
+    # pool = multiprocessing.Pool(4)
+    # pool.map()
     a_range = np.linspace(*a_bounds, num=grid_size)
     b_range = np.linspace(*b_bounds, num=grid_size)
 

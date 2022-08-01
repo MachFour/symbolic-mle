@@ -6,24 +6,18 @@ a simulation-based method is used.
 
 """
 
-from typing import Callable
+from typing import Callable, Iterable
 
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import skew, skewnorm, uniform, norm
 
 from helper.centred_skew_normal import skewnorm_centered
-from symbols.normal import NormalSymbol
-from symbols.uniform import UniformSymbol
+from helper.utils import make_axis_values
+from symbols.normal import NormalSymbol, normal_symbols_heuristic_min_max, plot_normal_symbols
+from symbols.uniform import UniformSymbol, uniform_symbols_heuristic_min_max, plot_uniform_symbols
 
 SimFunc = Callable[[], np.ndarray]
-
-
-def get_x_axis(symbols_min: float, symbols_max: float, expand_factor: float = 1.5) -> np.ndarray:
-    plot_mid = (symbols_min + symbols_max) / 2
-    plot_half_length = (symbols_max - symbols_min) / 2 * expand_factor
-
-    x = np.linspace(plot_mid - plot_half_length, plot_mid + plot_half_length, round(plot_half_length*10))
 
 
 def fit_to_data(generate_data: SimFunc, reps: int, use_centered_sn: bool = True) -> np.ndarray:
@@ -74,54 +68,67 @@ def fit_to_data(generate_data: SimFunc, reps: int, use_centered_sn: bool = True)
     return np.nanmean(simulation_mles, 0)
 
 
-def uniform_symbols_mle(symbols: tuple[UniformSymbol, ...], sim_reps: int = 1000, use_centered: bool = True) -> float:
+def uniform_symbols_mle(
+    symbols: Iterable[UniformSymbol],
+    sim_reps: int = 1000,
+    use_centered: bool = True,
+    plot_intermediate: bool = False,
+) -> tuple[float, float, float]:
     def sim_func() -> np.ndarray:
         # simulate points from the symbol distributions
         return np.hstack(list(uniform.rvs(loc=s.a, scale=s.b - s.a, size=s.n) for s in symbols))
 
     # plot the distribution and points
-    symbols_min = min(s.a for s in symbols)
-    symbols_max = max(s.b for s in symbols)
-    x = get_x_axis(symbols_min, symbols_max)
+    x_min, x_max = uniform_symbols_heuristic_min_max(symbols, 1.5)
+    x = make_axis_values(x_min, x_max)
 
     shape, loc, scale = fit_to_data(sim_func, sim_reps, use_centered)
-    pdf_func = skewnorm_centered.pdf if use_centered else skewnorm.pdf
-    y = pdf_func(x, shape, loc=loc, scale=scale)
 
     # visualise uniform symbols as stems between symbol min and max,
     # with number of stems equal to number of points in the symbol,
     # and height inversely proportional to the distance between min and max
     # multiplied by the relative symbol size (n) among all symbols
-    N = sum(s.n for s in symbols)
-    for (a, b, n) in symbols:
-        stem_data_x = np.linspace(a, b, n)
-        stem_data_y = np.ones(stem_data_x.shape)/(b-a) * n / N
-        plt.stem(stem_data_x, stem_data_y, linefmt='r-', markerfmt='ro')
-    plt.plot(x, y)
-    plt.show()
+
+    if plot_intermediate:
+        fig = plt.figure(figsize=(10, 10))
+        fig.subplots_adjust(hspace=0.5)
+        ax0 = fig.add_subplot(2, 1, 1)
+        ax1 = fig.add_subplot(2, 1, 2)
+        plot_uniform_symbols(symbols, ax0, ax1, x, class_size_weighted_pdf=True)
+        dist = skewnorm_centered if use_centered else skewnorm
+        ax0.plot(x, dist.pdf(x, shape, loc=loc, scale=scale))
+        ax1.plot(x, dist.cdf(x, shape, loc=loc, scale=scale))
+
+    return shape, loc, scale
 
 
-def normal_symbols_mle(symbols: tuple[NormalSymbol, ...], sim_reps: int = 1000, use_centered: bool = True) -> float:
+def normal_symbols_mle(
+    symbols: Iterable[NormalSymbol],
+    sim_reps: int = 1000,
+    use_centered: bool = True,
+    plot_intermediate: bool = False,
+) -> tuple[float, float, float]:
     def sim_func() -> np.ndarray:
         # simulate points from the symbol distributions
         return np.hstack(list(norm.rvs(loc=s.mu, scale=s.sigma, size=s.n) for s in symbols))
 
     # plot the distribution and points
-    symbols_min = min(s.mu - 3*s.sigma for s in symbols)
-    symbols_max = max(s.mu + 3*s.sigma for s in symbols)
-    x = get_x_axis(symbols_min, symbols_max)
+    x_min, x_max = normal_symbols_heuristic_min_max(symbols, 1.5)
+    x = make_axis_values(x_min, x_max)
 
     shape, loc, scale = fit_to_data(sim_func, sim_reps, use_centered)
 
-    pdf_func = skewnorm_centered.pdf if use_centered else skewnorm.pdf
-    y = pdf_func(x, shape, loc=loc, scale=scale)
+    if plot_intermediate:
+        fig = plt.figure(figsize=(10, 10))
+        fig.subplots_adjust(hspace=0.5)
+        ax0 = fig.add_subplot(2, 1, 1)
+        ax1 = fig.add_subplot(2, 1, 2)
+        plot_normal_symbols(symbols, ax0, ax1, x, class_size_weighted_pdf=True)
+        dist = skewnorm_centered if use_centered else skewnorm
+        ax0.plot(x, dist.pdf(x, shape, loc=loc, scale=scale))
+        ax1.plot(x, dist.cdf(x, shape, loc=loc, scale=scale))
 
-    N = sum(s.n for s in symbols)
-    for (mu, sigma, n) in symbols:
-        stem_data_y = norm.pdf(x, loc=mu, scale=sigma) * n / N
-        plt.plot(x, stem_data_y, 'r-')
-    plt.plot(x, y)
-    plt.show()
+    return shape, loc, scale
 
 
 def main():
@@ -136,14 +143,15 @@ def main():
         UniformSymbol(4, 6, 10),
         UniformSymbol(14, 16, 600),
     )
-    #uniform_symbols_mle(uniform_symbols_1, 10)
 
     normal_symbols_1 = (
         NormalSymbol(30, 10, 10),
         NormalSymbol(100, 10, 70),
         NormalSymbol(-100, 2, 10),
     )
-    normal_symbols_mle(normal_symbols_1, 10)
+    uniform_symbols_mle(uniform_symbols_2, 10, plot_intermediate=True)
+    # normal_symbols_mle(normal_symbols_1, 10, plot_intermediate=True)
+    plt.show()
 
 
 if __name__ == "__main__":

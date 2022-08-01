@@ -13,11 +13,7 @@ from symbols.normal import NormalSymbol
 def generate_points(samples: int, n: int, r: float, plot: bool = False) -> np.ndarray:
     # Generate samples from standard n-variate Normal distribution
     # Each sample forms 1 column
-    x = norm.rvs(size=(n, samples))
-    # normalise columns to have L2 norm of 2
-    # ACTUALLY THIS IS NOT NEEDED
-    #y = x / np.linalg.norm(x, axis=0, keepdims=True)
-    y = x
+    y = norm.rvs(size=(n, samples))
     # project onto plane through origin perpendicular to (1, 1, ..., 1) (normalised)
     normal_vector = np.ones((n, 1)) / np.sqrt(n)
     # take dot product with normal vector (1/sqrt(n) * vector of ones)
@@ -41,7 +37,6 @@ def generate_points(samples: int, n: int, r: float, plot: bool = False) -> np.nd
             f"Plotting unsupported in {n} dimensions"
 
     return v
-
 
 
 def mean_variance_class_likelihood(
@@ -74,24 +69,24 @@ def mean_variance_class_likelihood(
     a_dash = (a - m) / s
     b_dash = (b - m) / s
 
-    n_k = class_size
+    n = class_size
 
-    n_2 = n_k // 2
+    n_2 = n // 2
     # the following integral approximation is correct up to a constant depending on n_k
-    if a_dash >= -1 / np.sqrt(n_k - 1) or b_dash <= 1 / np.sqrt(n_k - 1):
+    if a_dash >= -1 / np.sqrt(n - 1) or b_dash <= 1 / np.sqrt(n - 1):
         # this check strengthens the more trivial requirement of !(a_dash >= 0 || b_dash <= 0)
         # for the integral to be nonzero
         # these conditions can be shown using geometric arguments from 3D case
         integral_approx = 0
-    elif (b_dash - a_dash) < n_k / np.sqrt(n_2 * (n_k - n_2)):
-        # Ithink this is right? n_2 might substitute for 1 in the case above too,
+    elif (b_dash - a_dash) < n / np.sqrt(n_2 * (n - n_2)):
+        # I think this is right? n_2 might substitute for 1 in the case above too,
         # since they coincide for n=3
         integral_approx = 0
-    elif a_dash <= -np.sqrt(n_k) and b_dash >= np.sqrt(n_k):
+    elif a_dash <= -np.sqrt(n) and b_dash >= np.sqrt(n):
         # all points will lie in the sphere
         integral_approx = 1
     else:
-        points = generate_points(num_samples, n_k, np.sqrt(n_k))
+        points = generate_points(num_samples, n, np.sqrt(n))
         # determine which points/samples lie in the [a_dash, b_dash] hypercube
         # equivalent to checking if all coordinates in each column lie in [a_dash, b_dash]
         points_in_hypercube = np.logical_and(a_dash <= points, points <= b_dash).all(axis=0)
@@ -101,9 +96,9 @@ def mean_variance_class_likelihood(
         if integral_approx == 0:
             # return -np.inf
             return -1e16  # make it easier for optimisation functions
-        return np.log(integral_approx) - n_k * np.log(b - a)
+        return np.log(integral_approx) - n * np.log(b - a)
     else:
-        return integral_approx / (b - a) ** n_k
+        return integral_approx / (b - a) ** n
 
 
 def mean_variance_symbolic_likelihood(
