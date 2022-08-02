@@ -1,26 +1,27 @@
-from typing import Iterable
+from typing import Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 from helper.utils import make_axis_values
 from method3.models.normal import normal_symbols_variance_mle, normal_symbols_mean_mle, VarianceBiasType
-from symbols.normal import NormalSymbol, plot_normal_symbols, normal_symbols_heuristic_min_max, plot_normal_distribution
+from symbols.common import plot_normal_symbols, symbols_heuristic_min_max
+from symbols.normal import NormalSymbol, plot_normal_distribution
 
 
-def normal_normal_method1(symbols: Iterable[NormalSymbol]) -> tuple[float, float]:
+def normal_normal_method1(symbols: Sequence[NormalSymbol]) -> tuple[float, float]:
     mu = normal_symbols_mean_mle(symbols)
     sigma = np.sqrt(normal_symbols_variance_mle(symbols, VarianceBiasType.M1_BIASED_SUMMARY))
     return mu, sigma
 
 
-def normal_normal_method3(symbols: Iterable[NormalSymbol]) -> tuple[float, float]:
+def normal_normal_method3(symbols: Sequence[NormalSymbol]) -> tuple[float, float]:
     mu = normal_symbols_mean_mle(symbols)
     sigma = np.sqrt(normal_symbols_variance_mle(symbols, VarianceBiasType.M3_BIASED_ESTIMATOR))
     return mu, sigma
 
 
-def plot_normal_normal_method(symbols: Iterable[NormalSymbol], method: int):
+def plot_normal_normal_method(symbols: Sequence[NormalSymbol], method: int):
     match method:
         case 1:
             plot_normal_normal_method_comparison(symbols, with_m1=True, with_m3=False)
@@ -30,13 +31,13 @@ def plot_normal_normal_method(symbols: Iterable[NormalSymbol], method: int):
             raise ValueError(f"Unsupported method: {method}")
 
 
-def plot_normal_normal_method_comparison(symbols: Iterable[NormalSymbol], with_m1: bool = True, with_m3: bool = True):
+def plot_normal_normal_method_comparison(symbols: Sequence[NormalSymbol], with_m1: bool = True, with_m3: bool = True):
     """
     Plot distributions of each normal symbol, then the CDFs of the estimated
     minimum and maximum of a uniform model fitted to the symbols
     """
 
-    x_min, x_max = normal_symbols_heuristic_min_max(symbols, expand_factor=1.2)
+    x_min, x_max = symbols_heuristic_min_max(symbols, 1.2)
     x = make_axis_values(x_min, x_max)
 
     fig: plt.Figure = plt.figure(figsize=(10, 10))

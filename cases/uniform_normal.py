@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,11 +7,12 @@ from helper.utils import make_axis_values, maximise_in_grid
 from method1.uniform_model.mean_variance_symbols import mean_variance_symbolic_likelihood
 from method3.models.uniform import normal_symbol_max_mle, normal_symbol_min_mle, \
     normal_symbol_max_cdf, normal_symbol_min_cdf
-from symbols.normal import NormalSymbol, plot_normal_symbols, normal_symbols_heuristic_min_max
+from symbols.common import plot_normal_symbols, symbols_heuristic_min_max
+from symbols.normal import NormalSymbol
 
 
 def uniform_normal_method1(
-    symbols: Iterable[NormalSymbol],
+    symbols: Sequence[NormalSymbol],
     precision: int = 3,
     plot_intermediate: bool = False
 ) -> tuple[float, float]:
@@ -40,12 +41,12 @@ def uniform_normal_method1(
     return max_a, max_b
 
 
-def uniform_normal_method3(symbols: Iterable[NormalSymbol], plot_intermediate: bool = False) -> tuple[float, float]:
+def uniform_normal_method3(symbols: Sequence[NormalSymbol], plot_intermediate: bool = False) -> tuple[float, float]:
     mean_A = normal_symbol_min_mle(symbols)
     mean_B = normal_symbol_max_mle(symbols)
 
     if plot_intermediate:
-        x_min, x_max = normal_symbols_heuristic_min_max(symbols, expand_factor=1.2)
+        x_min, x_max = symbols_heuristic_min_max(symbols, 1.2)
         x = make_axis_values(x_min, x_max)
 
         fig: plt.Figure = plt.figure(figsize=(10, 10))
@@ -72,7 +73,7 @@ def uniform_normal_method3(symbols: Iterable[NormalSymbol], plot_intermediate: b
     return mean_A, mean_B
 
 
-def plot_uniform_normal_method(symbols: Iterable[NormalSymbol], method: int):
+def plot_uniform_normal_method(symbols: Sequence[NormalSymbol], method: int):
     """
     Plot distributions of each normal symbol, then the CDFs of the estimated
     minimum and maximum of a uniform model fitted to the symbols
@@ -109,7 +110,7 @@ def plot_uniform_normal_method(symbols: Iterable[NormalSymbol], method: int):
 
 
 def plot_uniform_normal_method_comparison(
-    symbols: Iterable[NormalSymbol],
+    symbols: Sequence[NormalSymbol],
     method1_precision: int
 ):
     fig: plt.Figure = plt.figure(figsize=(10, 10))

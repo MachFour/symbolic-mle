@@ -24,20 +24,20 @@ NOTE: this estimator is a little bit biased, just like the usual MLE of variance
 for a normal distribution.
 """
 from enum import Enum, unique
-from typing import Iterable
+from typing import Sequence
 
 from symbols.normal import NormalSymbol
 from symbols.uniform import UniformSymbol
 
 
-def uniform_symbols_mean_mle(symbols: Iterable[UniformSymbol]) -> float:
+def uniform_symbols_mean_mle(symbols: Sequence[UniformSymbol]) -> float:
     N = sum(s.n for s in symbols)
 
     # mean of uniform(a, b) is (a + b)/2
     return sum(n / N * (a + b) / 2 for (a, b, n) in symbols)
 
 
-def uniform_symbols_variance_mle(symbols: Iterable[UniformSymbol]) -> float:
+def uniform_symbols_variance_mle(symbols: Sequence[UniformSymbol]) -> float:
     N = sum(s.n for s in symbols)
     m = uniform_symbols_mean_mle(symbols)
 
@@ -45,7 +45,7 @@ def uniform_symbols_variance_mle(symbols: Iterable[UniformSymbol]) -> float:
     return sum(n / N * ((1 - 1 / N) * (b - a) ** 2 / 12 + ((a + b) / 2 - m) ** 2) for (a, b, n) in symbols)
 
 
-def normal_symbols_mean_mle(symbols: Iterable[NormalSymbol]) -> float:
+def normal_symbols_mean_mle(symbols: Sequence[NormalSymbol]) -> float:
     """
     
     µ̂ = sum { n_k / N * m_k },
@@ -67,7 +67,7 @@ class VarianceBiasType(Enum):
     M3_UNBIASED_ESTIMATOR = "method3_unbiased_estimator"
 
 
-def normal_symbols_variance_mle(symbols: Iterable[NormalSymbol], bias_type: VarianceBiasType) -> float:
+def normal_symbols_variance_mle(symbols: Sequence[NormalSymbol], bias_type: VarianceBiasType) -> float:
     """
     σ̂^2 = sum { s_k * b1 + (m_k - µ̂)^2 * b2 },
     where m_k and s_k are class mean and variance respectively, N is sum of class sizes,

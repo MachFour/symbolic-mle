@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -102,7 +102,7 @@ def mean_variance_class_likelihood(
 
 
 def mean_variance_symbolic_likelihood(
-    symbols: Iterable[NormalSymbol],
+    symbols: Sequence[NormalSymbol],
     a: float,
     b: float,
     log: bool = False,

@@ -20,55 +20,56 @@ distributions is given by the expected value of random variable B with CDF:
 
 F_B(b) = prod { (F_k(b))^n_k }, where F_k is the CDF of the kth symbol
 """
-from typing import Iterable
+from typing import Sequence
 
 import numpy as np
 from scipy.stats import norm, uniform
 
 from helper.utils import expectation_from_cdf
-from symbols.normal import NormalSymbol, normal_symbols_heuristic_min_max
-from symbols.uniform import UniformSymbol, uniform_symbols_heuristic_min_max
+from symbols.common import symbols_heuristic_min_max
+from symbols.normal import NormalSymbol
+from symbols.uniform import UniformSymbol
 
 
-def uniform_symbol_min_cdf(x: np.ndarray, symbols: Iterable[UniformSymbol]) -> np.ndarray:
+def uniform_symbol_min_cdf(x: np.ndarray, symbols: Sequence[UniformSymbol]) -> np.ndarray:
     # sf is survival function = 1 - cdf
     product_terms = tuple((uniform.sf(x, loc=s.a, scale=s.b - s.a)) ** s.n for s in symbols)
     return 1 - np.prod(np.asarray(product_terms), axis=0)
 
 
-def uniform_symbol_max_cdf(x: np.ndarray, symbols: Iterable[UniformSymbol]) -> np.ndarray:
+def uniform_symbol_max_cdf(x: np.ndarray, symbols: Sequence[UniformSymbol]) -> np.ndarray:
     product_terms = tuple((uniform.cdf(x, loc=s.a, scale=s.b - s.a)) ** s.n for s in symbols)
     return np.prod(np.asarray(product_terms), axis=0)
 
 
-def normal_symbol_min_cdf(x: np.ndarray, symbols: Iterable[NormalSymbol]) -> np.ndarray:
+def normal_symbol_min_cdf(x: np.ndarray, symbols: Sequence[NormalSymbol]) -> np.ndarray:
     # sf is survival function = 1 - cdf
     product_terms = tuple((norm.sf(x, loc=s.mu, scale=s.sigma)**s.n for s in symbols))
     return 1 - np.prod(np.asarray(product_terms), axis=0)
 
 
-def normal_symbol_max_cdf(x: np.ndarray, symbols: Iterable[NormalSymbol]) -> np.ndarray:
+def normal_symbol_max_cdf(x: np.ndarray, symbols: Sequence[NormalSymbol]) -> np.ndarray:
     product_terms = tuple((norm.cdf(x, loc=s.mu, scale=s.sigma)**s.n for s in symbols))
     return np.prod(np.asarray(product_terms), axis=0)
 
 
-def uniform_symbol_min_mle(symbols: Iterable[UniformSymbol]) -> float:
-    x_min, x_max = uniform_symbols_heuristic_min_max(symbols, expand_factor=1.3)
+def uniform_symbol_min_mle(symbols: Sequence[UniformSymbol]) -> float:
+    x_min, x_max = symbols_heuristic_min_max(symbols, 1.3)
     return expectation_from_cdf(lambda x: uniform_symbol_min_cdf(x, symbols), x_min, x_max)
 
 
-def uniform_symbol_max_mle(symbols: Iterable[UniformSymbol]) -> float:
-    x_min, x_max = uniform_symbols_heuristic_min_max(symbols, expand_factor=1.3)
+def uniform_symbol_max_mle(symbols: Sequence[UniformSymbol]) -> float:
+    x_min, x_max = symbols_heuristic_min_max(symbols, 1.3)
     return expectation_from_cdf(lambda x: uniform_symbol_max_cdf(x, symbols), x_min, x_max)
 
 
-def normal_symbol_min_mle(symbols: Iterable[NormalSymbol]) -> float:
-    x_min, x_max = normal_symbols_heuristic_min_max(symbols, expand_factor=1.3)
+def normal_symbol_min_mle(symbols: Sequence[NormalSymbol]) -> float:
+    x_min, x_max = symbols_heuristic_min_max(symbols, 1.3)
     return expectation_from_cdf(lambda x: normal_symbol_min_cdf(x, symbols), x_min, x_max)
 
 
-def normal_symbol_max_mle(symbols: Iterable[NormalSymbol]) -> float:
-    x_min, x_max = normal_symbols_heuristic_min_max(symbols, expand_factor=1.3)
+def normal_symbol_max_mle(symbols: Sequence[NormalSymbol]) -> float:
+    x_min, x_max = symbols_heuristic_min_max(symbols, 1.3)
     return expectation_from_cdf(lambda x: normal_symbol_max_cdf(x, symbols), x_min, x_max)
 
 
