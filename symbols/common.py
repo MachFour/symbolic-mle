@@ -3,8 +3,9 @@ from typing import Sequence
 import numpy as np
 from matplotlib.axes import Axes
 
-from helper.utils import make_axis_values, expand_interval
+from helper.utils import linspace_dense, expand_interval
 from symbols.normal import NormalSymbol
+from symbols.order_statistic import OrderStatisticSymbol
 from symbols.uniform import UniformSymbol
 
 
@@ -15,6 +16,8 @@ def get_symbol_type(symbols: Sequence) -> type | None:
         return UniformSymbol
     elif all(isinstance(s, NormalSymbol) for s in symbols):
         return NormalSymbol
+    elif all(isinstance(s, OrderStatisticSymbol) for s in symbols):
+        return OrderStatisticSymbol
     else:
         return None
 
@@ -36,7 +39,7 @@ def plot_symbols(
 
     if x_values is None:
         x_min, x_max = symbols_heuristic_min_max(symbols, expand_factor=1.5)
-        x = make_axis_values(x_min, x_max)
+        x = linspace_dense(x_min, x_max)
     else:
         x = x_values
 
@@ -47,13 +50,9 @@ def plot_symbols(
 
 
 def symbols_heuristic_min_max(
-    symbols: Sequence[UniformSymbol] | Sequence[NormalSymbol],
+    symbols: Sequence[UniformSymbol] | Sequence[NormalSymbol] | Sequence[OrderStatisticSymbol],
     expand_factor: float = 1.0
 ) -> tuple[float, float]:
-    symbol_type = get_symbol_type(symbols)
-    if symbol_type is None:
-        return np.nan, np.nan
-
     x_min = 1e20
     x_max = -1e20
 

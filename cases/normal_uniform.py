@@ -3,7 +3,7 @@ from typing import Sequence
 import matplotlib.pyplot as plt
 import numpy as np
 
-from helper.utils import make_axis_values
+from helper.utils import linspace_dense
 from method3.models.normal import uniform_symbols_mean_mle, uniform_symbols_variance_mle
 from symbols.common import symbols_heuristic_min_max, plot_symbols, plot_as_distribution
 from symbols.normal import NormalSymbol
@@ -46,7 +46,7 @@ def plot_normal_uniform_method_comparison(symbols: Sequence[UniformSymbol], with
     ax1.set_title("CDF of symbols, and fitted Normal model cdf")
 
     x_min, x_max = symbols_heuristic_min_max(symbols, 1.2)
-    x = make_axis_values(x_min, x_max)
+    x = linspace_dense(x_min, x_max)
 
     plot_symbols(symbols, ax0, ax1, x)
 

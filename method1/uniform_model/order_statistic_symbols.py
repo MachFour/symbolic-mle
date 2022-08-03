@@ -1,16 +1,15 @@
-from typing import Callable
+from typing import Sequence
 
 import numpy as np
 from scipy.special import comb
-from scipy.stats import uniform
+
+from helper.utils import linspace_dense
+from symbols.common import symbols_heuristic_min_max
+from symbols.order_statistic import OrderStatisticSymbol
 
 
 def order_statistic_class_likelihood(
-    lower_statistic_value: float,
-    lower_statistic_ordinal: int,
-    upper_statistic_value: float,
-    upper_statistic_ordinal: int,
-    class_size: int,
+    symbol: OrderStatisticSymbol,
     a: float,
     b: float,
     log: bool = False
@@ -21,13 +20,7 @@ def order_statistic_class_likelihood(
     To evaluate the likelihood for multiple symbols/classes, the likelihood values obtained from each class
     need to be multiplied, or added together in the case of log-likelihood
 
-    :param lower_statistic_value: Observed summary value for lower order statistic
-    :param lower_statistic_ordinal: Position of lower order statistic, between 1 and n
-            where n is the size of the class. Must be less than upper statistic ordinal.
-    :param upper_statistic_value: Observed summary value for upper order statistic
-    :param upper_statistic_ordinal: Position of upper order statistic, between 1 and n
-            where n is the size of the class. Must be greater than lower statistic ordinal.
-    :param class_size: Number of points summarised by the symbol
+    :param symbol: order statistic data and class size
     :param a: minimum parameter for Uniform model; likelihood is evaluated at this point
     :param b: maximum parameter for Uniform model; likelihood is evaluated at this point
     :param log: Whether to make a log-likelihood function rather than ordinary one. This
@@ -35,99 +28,124 @@ def order_statistic_class_likelihood(
         multiplication
     :return: (Log)-likelihood of the given symbol data for given μ, σ parameters.
     """
-    # L_k(θ, s, n) = G(s_l; θ)^(l-1) * [G(s_u; θ) - G(s_l; θ)]^(u - l - 1) * (1 - G(s_u; θ))^(n-u) g(s_u); θ) g(s_l); θ)
+    # For 1 <= l < u <= n, a <= s_l <= s_u <= b, the symbolic class likelihood is given by
+    # L_k(a, b, s_l, s_u, l, u, n) =
+    #   C * (s_l - a)^(l-1) * (s_u - s_l)^(u - l - 1) * (b - s_u)^(n-u) / (b-a)^n
     # where
-    # θ is the parameter (vector) to be chosen,
-    # G(.; θ) is the model CDF,
-    # g(.; θ) is the model PDF,
+    # a, b are the parameters of the Uniform(a, b) model
     # l and u are respectively the lower and upper ordinals,
     # s_l and s_u are the observed order statistics of order l and u respectively.
 
     # The constant of proportionality is given by
     # C = n! / [ (l - 1)! * (u - l - 1)! (n - u)! = nCu * uCl * l * (u-l)
 
-    n = class_size
-    l, u = lower_statistic_ordinal, upper_statistic_ordinal
-    s_l, s_u = lower_statistic_value, upper_statistic_value
+    n, l, u = symbol.n, symbol.lower_order, symbol.upper_order
+    s_l, s_u = symbol.lower_stat, symbol.upper_stat
 
-    if not (1 <= l < u <= n):
-        raise ValueError("Must have 1 <= lower statistic order < upper statistic order <= class size")
-    elif not s_l <= s_u:
-        raise ValueError("Must have observed lower statistic <= observed upper statistic")
-    elif not a <= b:
-        raise ValueError("Must have a <= b")
+    if a > s_l or b < s_u:
+        return -np.inf if log else 0
 
     C = comb(n, u, exact=True) * comb(u, l, exact=True) * l * (u - l)
 
-    if not log:
-        # L_k(θ, s, n) =
-        lower_pdf, upper_pdf = uniform.pdf([s_l, s_u], loc=a, scale=b-a).flat
-        lower_cdf, upper_cdf = uniform.cdf([s_l, s_u], loc=a, scale=b-a).flat
-        # G(s_l; θ)^(l-1)
-        l_term = lower_cdf**(l-1) if l - 1 > 0 else 1
-        # * (1 - G(s_u; θ))^(n-u)
-        u_term = uniform.sf(s_u, loc=a, scale=b-a)**(n-u) if n - u > 0 else 1
-        # * [G(s_u; θ) - G(s_l; θ)]^(u - l - 1)
-        difference_term = (upper_cdf - lower_cdf) ** (u - l - 1) if (u - l - 1) > 0 else 1
-
-        # G(s_l; θ)^(l-1) * [G(s_u; θ) - G(s_l; θ)]^(u - l - 1) * (1 - G(s_u; θ))^(n-u) g(s_u); θ) g(s_l); θ)
-        return l_term * difference_term * u_term * lower_pdf * upper_pdf * C
+    if log:
+        l_term = (l-1) * np.log(s_l - a)
+        difference_term = (u - l - 1) * np.log(s_u - s_l)
+        u_term = (n - u) * np.log(b - s_u)
+        denominator = n * np.log(b - a)
+        return l_term + difference_term + u_term + np.log(C) - denominator
     else:
-        # l_k(θ, s, n) =
-        lower_log_pdf, upper_log_pdf = uniform.logpdf([s_l, s_u], loc=a, scale=b-a).flat
-        lower_log_cdf, upper_log_cdf = uniform.logcdf([s_l, s_u], loc=a, scale=b-a).flat
-        lower_cdf, upper_cdf = uniform.cdf([s_l, s_u], loc=a, scale=b-a).flat
-        # (l-1) * log G(s_l; θ)
-        l_term = lower_log_cdf * (l - 1) if l - 1 > 0 else 0
-        # + (n-u) * log (1 - G(s_u; θ))
-        u_term = uniform.logsf(s_u, loc=a, scale=b-a) * (n - u) if n - u > 0 else 0
-        # + (u - l - 1) * log [G(s_u; θ) - G(s_l; θ)]
-        difference_term = np.log(upper_cdf - lower_cdf) * (u - l - 1) if (u - l - 1) > 0 else 1
-
-        return l_term + difference_term + u_term + lower_log_pdf + upper_log_pdf + np.log(C)
+        l_term = (s_l - a)**(l-1) if l - 1 > 0 else 1
+        difference_term = (s_u - s_l) ** (u - l - 1) if u - l - 1 > 0 else 1
+        u_term = (b - s_u) ** (n-u) if n - u > 0 else 1
+        denominator = (b - a) ** n
+        return l_term * difference_term * u_term * C / denominator
 
 
-def make_order_statistic_class_likelihood(
-        lower_statistic_value: float,
-        lower_statistic_ordinal: int,
-        upper_statistic_value: float,
-        upper_statistic_ordinal: int,
-        class_size: int,
-        log: bool = False
-) -> Callable[[float, float], float]:
-    """
-    Implements 4.3.12 from honours thesis: single-class symbolic likelihood for 1D univariate normal
-    when class summaries are order statistics (min and max are special case)
+def order_statistic_symbolic_likelihood(
+    symbols: Sequence[OrderStatisticSymbol],
+    a: float,
+    b: float,
+    log: bool = False
+) -> float:
+    if b < a:
+        return -np.inf if log else 0
+    if len(symbols) == 0:
+        return 0 if log else 1
 
-    This function can be used to create a 1D symbolic likelihood function per class,
-    which can then be used to evaluate the symbolic likelihood for desired model parameters.
-
-    :param lower_statistic_value: Observed summary value for lower order statistic
-    :param lower_statistic_ordinal: Position of lower order statistic, between 1 and n
-            where n is the size of the class. Must be less than upper statistic ordinal.
-    :param upper_statistic_value: Observed summary value for upper order statistic
-    :param upper_statistic_ordinal: Position of upper order statistic, between 1 and n
-            where n is the size of the class. Must be greater than lower statistic ordinal.
-    :param class_size: Number of points summarised by the symbol
-    :param log: Whether to make a log-likelihood function rather than ordinary one. This
-        should be combined with other classes' log-likelihoods via summation rather than
-        multiplication
-    :return: Function returning symbolic likelihood function for a Gaussian(μ, σ) distribution.
-        This can be maximised or evaluated at model parameters of interest. Note σ is not squared.
-    """
-
-    def likelihood(a: float, b: float) -> float:
-        return order_statistic_class_likelihood(
-            lower_statistic_value,
-            lower_statistic_ordinal,
-            upper_statistic_value,
-            upper_statistic_ordinal,
-            class_size,
-            a,
-            b,
-            log
-        )
-
-    return likelihood
+    terms = [order_statistic_class_likelihood(s, a, b, log=log) for s in symbols]
+    return sum(terms) if log else np.product(terms)
 
 
+# TODO test this method with nontrivial order statistic symbols
+#  (i.e. not from uniform distribution)
+def fit_uniform_model(
+    symbols: Sequence[OrderStatisticSymbol],
+    debug_print: bool = False
+) -> tuple[float, float]:
+    # maximise symbolic likelihood
+
+    if all(s.lower_order == 1 for s in symbols):
+        a_mle = min(s.lower_stat for s in symbols)
+        if debug_print:
+            print(f"Uniform model [M1]: lower statistic is min; setting a = {a_mle}")
+    else:
+        a_mle = np.nan
+    if all(s.upper_order == s.n for s in symbols):
+        b_mle = max(s.upper_stat for s in symbols)
+        if debug_print:
+            print(f"Uniform model [M1]: upper statistic is max; setting b = {b_mle}")
+    else:
+        b_mle = np.nan
+
+    # we need a < s_l for all symbols and b > s_u
+    max_a = min(s.lower_stat for s in symbols)
+    min_b = max(s.upper_stat for s in symbols)
+
+    # try to find a reasonable upper limit for search space
+    min_a, max_b = symbols_heuristic_min_max(symbols, 2)
+
+    N = sum(s.n for s in symbols)
+
+    max_ll = -1e20
+
+    def test_ll_candidate(_a: float, _b: float):
+        nonlocal max_ll, a_mle, b_mle
+        ll = order_statistic_symbolic_likelihood(symbols, _a, _b, log=True)
+        if ll > max_ll:
+            max_ll, a_mle, b_mle = ll, _a, _b
+            if debug_print:
+                print(f"Uniform model [M1]: found new max_ll = {max_ll} for a = {_a}, b = {_b}")
+
+    def find_a(_b: float) -> float:
+        # If l_k > 1 for some k, then given a maximising value â, b is given by
+        # b = â + N / sum { (l_k - 1) / (s^(l)_k - â ) }
+        def summation_term(s: OrderStatisticSymbol) -> float:
+            return 0 if s.upper_stat == _b else (s.n - s.upper_order) / (_b - s.upper_stat)
+
+        return _b - N / sum(summation_term(s) for s in symbols)
+
+    def find_b(_a: float) -> float:
+        # If u_k < n_k for some k, then a maximising value b̂, a is given by
+        # a = b̂ - N / sum { (n_k - u_k) / (b̂ - s^(u)_k) }
+        def summation_term(s: OrderStatisticSymbol) -> float:
+            return 0 if s.lower_stat == _a else (s.lower_order - 1) / (s.lower_stat - _a)
+
+        return _a + N / sum(summation_term(s) for s in symbols)
+
+    if np.isnan(a_mle):
+        # need to search for a
+        if debug_print:
+            print(f"Uniform model [M1]: Search values of a from {min_a} to {max_a}")
+        for a in linspace_dense(min_a, max_a):
+            test_ll_candidate(a, find_b(a))
+
+    if np.isnan(b_mle):
+        if debug_print:
+            print(f"Uniform model [M1]: Search values of b from {min_b} to {max_b}")
+        for b in linspace_dense(min_b, max_b):
+            test_ll_candidate(find_a(b), b)
+
+    if debug_print:
+        print(f"Uniform model [M1] - a_mle = {a_mle}, b_mle = {b_mle}")
+
+    return a_mle, b_mle

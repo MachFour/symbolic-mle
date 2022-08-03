@@ -96,7 +96,8 @@ def mean_variance_class_likelihood(
         if integral_approx == 0:
             # return -np.inf
             return -1e16  # make it easier for optimisation functions
-        return np.log(integral_approx) - n * np.log(b - a)
+        else:
+            return np.log(integral_approx) - n * np.log(b - a)
     else:
         return integral_approx / (b - a) ** n
 

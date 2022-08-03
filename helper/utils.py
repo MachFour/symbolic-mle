@@ -5,8 +5,10 @@ import numpy as np
 from scipy.integrate import quad
 
 
-def make_axis_values(plot_min: float, plot_max: float, density: float = 10) -> np.ndarray:
-    return np.linspace(plot_min, plot_max, round((plot_max - plot_min) * density))
+def linspace_dense(min_val: float, max_val: float, density: float = 10) -> np.ndarray:
+    if min_val > max_val:
+        raise ValueError("Cannot have min_val > max_val")
+    return np.linspace(min_val, max_val, round((max_val - min_val) * density))
 
 
 def expand_interval(left: float, right: float, expand_factor: float) -> tuple[float, float]:

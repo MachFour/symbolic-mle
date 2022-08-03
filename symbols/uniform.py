@@ -1,6 +1,8 @@
 import numpy as np
 from scipy.stats import uniform
 
+from symbols.order_statistic import OrderStatisticSymbol
+
 
 class UniformSymbol:
     """
@@ -49,5 +51,7 @@ class UniformSymbol:
     def rvs(self):
         return uniform.rvs(loc=self.a, scale=self.b - self.a, size=self.n)
 
+    def to_order_statistic_symbol(self) -> OrderStatisticSymbol:
+        return OrderStatisticSymbol(self.a, self.b, 1, self.n, self.n)
 
 

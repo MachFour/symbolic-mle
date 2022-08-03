@@ -3,10 +3,10 @@ from typing import Sequence
 import matplotlib.pyplot as plt
 import numpy as np
 
-from helper.utils import make_axis_values
+from helper.utils import linspace_dense
 from method3.models.normal import normal_symbols_variance_mle, normal_symbols_mean_mle, VarianceBiasType
-from symbols.common import plot_normal_symbols, symbols_heuristic_min_max
-from symbols.normal import NormalSymbol, plot_normal_distribution
+from symbols.common import plot_symbols, symbols_heuristic_min_max, plot_as_distribution
+from symbols.normal import NormalSymbol
 
 
 def normal_normal_method1(symbols: Sequence[NormalSymbol]) -> tuple[float, float]:
@@ -38,7 +38,7 @@ def plot_normal_normal_method_comparison(symbols: Sequence[NormalSymbol], with_m
     """
 
     x_min, x_max = symbols_heuristic_min_max(symbols, 1.2)
-    x = make_axis_values(x_min, x_max)
+    x = linspace_dense(x_min, x_max)
 
     fig: plt.Figure = plt.figure(figsize=(10, 10))
     fig.suptitle("Fitting a Normal distribution to Normal symbols", fontweight="bold")
@@ -46,18 +46,18 @@ def plot_normal_normal_method_comparison(symbols: Sequence[NormalSymbol], with_m
     ax0: plt.Axes = fig.add_subplot(2, 1, 1)
     ax1: plt.Axes = fig.add_subplot(2, 1, 2)
 
-    plot_normal_symbols(symbols, ax0, ax1, x)
+    plot_symbols(symbols, ax0, ax1, x)
 
     ax0.set_title("PDF of symbols, and fitted Normal model pdf")
     ax1.set_title("CDF of symbols, and fitted Normal model cdf")
 
     if with_m1:
         mu1, sigma1 = normal_normal_method1(symbols)
-        plot_normal_distribution(NormalSymbol(mu1, sigma1, 1), x, ax0, ax1, linewidth=3, color='C5', label='Method 1')
+        plot_as_distribution(NormalSymbol(mu1, sigma1, 1), x, ax0, ax1, linewidth=3, color='C5', label='Method 1')
         print(f"mu1 = {mu1}, sigma1 = {sigma1}")
     if with_m3:
         mu3, sigma3 = normal_normal_method3(symbols)
-        plot_normal_distribution(NormalSymbol(mu3, sigma3, 1), x, ax0, ax1, linewidth=3, color='C6', label='Method 3')
+        plot_as_distribution(NormalSymbol(mu3, sigma3, 1), x, ax0, ax1, linewidth=3, color='C6', label='Method 3')
         print(f"mu3 = {mu3}, sigma3 = {sigma3}")
 
     ax0.legend()

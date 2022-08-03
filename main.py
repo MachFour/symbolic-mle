@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from cases.normal_normal import plot_normal_normal_method, plot_normal_normal_method_comparison
 from cases.normal_uniform import plot_normal_uniform_method
 from cases.uniform_normal import plot_uniform_normal_method, plot_uniform_normal_method_comparison
-from cases.uniform_uniform import plot_uniform_uniform_fitting
+from cases.uniform_uniform import plot_uniform_uniform_method_comparison
 from symbols.normal import NormalSymbol
 from symbols.uniform import UniformSymbol
 
@@ -26,7 +26,7 @@ def uniform_uniform(method: int | None = None):
         UniformSymbol(30, 45, 12)
     )
 
-    plot_uniform_uniform_fitting(uniform_symbols, method=method)
+    plot_uniform_uniform_method_comparison(uniform_symbols, method=method)
     plt.show()
 
 

@@ -13,7 +13,7 @@ import numpy as np
 from scipy.stats import skew, skewnorm
 
 from helper.centred_skew_normal import skewnorm_centered
-from helper.utils import make_axis_values
+from helper.utils import linspace_dense
 from symbols.common import symbols_heuristic_min_max, plot_symbols
 from symbols.normal import NormalSymbol
 from symbols.uniform import UniformSymbol
@@ -35,9 +35,9 @@ def fit_to_data(generate_data: SimFunc, reps: int, use_centered_sn: bool = True)
             sim_mle = skewnorm_centered.fit(data)
 
             print(
-                f"γ_1^: {sim_mle[0]:7.3f},",
-                f"μ^ = {sim_mle[1]:7.3f},",
-                f"σ^ = {sim_mle[2]:7.3f}",
+                f"γ̂_1: {sim_mle[0]:7.3f},",
+                f"μ̂ = {sim_mle[1]:7.3f},",
+                f"σ̂ = {sim_mle[2]:7.3f}",
             )
             simulation_mles[i, :] = sim_mle
         else:
@@ -58,9 +58,9 @@ def fit_to_data(generate_data: SimFunc, reps: int, use_centered_sn: bool = True)
             dont_use = abs(alpha_estimate) < 1e3 and abs(alpha_mle / alpha_estimate) > 1e4
             print(
                 f"sample skew: {skewness:8.3f},",
-                f"α: {alpha_estimate:6.3f} -> {alpha_mle:15.3f},",
-                f"ξ^ = {sim_mle[1]:7.3f},",
-                f"ω^ = {sim_mle[2]:7.3f}",
+                f"α̂: {alpha_estimate:6.3f} -> {alpha_mle:15.3f},",
+                f"ξ̂ = {sim_mle[1]:7.3f},",
+                f"ω̂ = {sim_mle[2]:7.3f}",
                 "[skip]" if dont_use else ""
             )
 
@@ -82,7 +82,7 @@ def find_mle(
         return np.hstack(list(s.rvs() for s in symbols))
 
     x_min, x_max = symbols_heuristic_min_max(symbols, 1.5)
-    x = make_axis_values(x_min, x_max)
+    x = linspace_dense(x_min, x_max)
     shape, loc, scale = fit_to_data(sim_func, sim_reps, use_centered)
 
     if plot_intermediate:
@@ -125,7 +125,7 @@ def main():
     )
     shape, loc, scale = find_mle(uniform_symbols_2, 10, plot_intermediate=True)
     print("Estimated parameters of skew-normal:")
-    print(f"ξ = {loc}, ω = {scale}, α = {shape}")
+    print(f"ξ̂ = {loc}, ω̂ = {scale}, α̂ = {shape}")
 
     # normal_symbols_mle(normal_symbols_1, 10, plot_intermediate=True)
     plt.show()
