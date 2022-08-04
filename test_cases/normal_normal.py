@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from helper.utils import linspace_dense
-from method3.models.normal import normal_symbols_variance_mle, normal_symbols_mean_mle, VarianceBiasType
+from method3.normal_model.normal_symbols import normal_symbols_variance_mle, normal_symbols_mean_mle, VarianceBiasType
 from symbols.common import plot_symbols, symbols_heuristic_min_max, plot_as_distribution
 from symbols.normal import NormalSymbol
 

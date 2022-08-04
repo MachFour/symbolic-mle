@@ -48,16 +48,16 @@ def order_statistic_class_likelihood(
     C = comb(n, u, exact=True) * comb(u, l, exact=True) * l * (u - l)
 
     if log:
-        l_term = (l-1) * np.log(s_l - a)
-        difference_term = (u - l - 1) * np.log(s_u - s_l)
-        u_term = (n - u) * np.log(b - s_u)
-        denominator = n * np.log(b - a)
+        l_term = np.log(s_l - a) * (l-1)
+        difference_term = np.log(s_u - s_l) * (u - l - 1)
+        u_term = np.log(b - s_u) * (n - u)
+        denominator = np.log(b - a) * n
         return l_term + difference_term + u_term + np.log(C) - denominator
     else:
-        l_term = (s_l - a)**(l-1) if l - 1 > 0 else 1
-        difference_term = (s_u - s_l) ** (u - l - 1) if u - l - 1 > 0 else 1
-        u_term = (b - s_u) ** (n-u) if n - u > 0 else 1
-        denominator = (b - a) ** n
+        l_term = (s_l - a)**(l - 1) if l - 1 > 0 else 1
+        difference_term = (s_u - s_l)**(u - l - 1) if u - l - 1 > 0 else 1
+        u_term = (b - s_u)**(n - u) if n - u > 0 else 1
+        denominator = (b - a)**n
         return l_term * difference_term * u_term * C / denominator
 
 

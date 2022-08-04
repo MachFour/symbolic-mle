@@ -5,8 +5,8 @@ import numpy as np
 
 from helper.utils import linspace_dense, maximise_in_grid
 from method1.uniform_model.mean_variance_symbols import mean_variance_symbolic_likelihood
-from method3.models.uniform import normal_symbol_max_mle, normal_symbol_min_mle, \
-    normal_symbol_max_cdf, normal_symbol_min_cdf
+from method3.uniform_model.normal_symbols import normal_symbol_min_cdf, normal_symbol_max_cdf, normal_symbol_min_mle, \
+    normal_symbol_max_mle
 from symbols.common import plot_symbols, symbols_heuristic_min_max
 from symbols.normal import NormalSymbol
 

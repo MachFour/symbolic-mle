@@ -27,12 +27,14 @@ def order_statistic_class_likelihood(
         multiplication
     :return: (Log)-likelihood of the given symbol data for given μ, σ parameters.
     """
-    s_u, s_l = symbol.upper_stat, symbol.lower_stat
+    s_l, s_u = symbol.lower_stat, symbol.upper_stat
     l, u, n = symbol.lower_order, symbol.upper_order, symbol.n
 
     # For 1 <= l < u <= n, s_l <= s_u, the symbolic class likelihood is given by
+
     # L_k(θ, s_l, s_u, l, u, n) =
-    #    C * G(s_l; θ)^(l-1) * [G(s_u; θ) - G(s_l; θ)]^(u - l - 1) * (1 - G(s_u; θ))^(n-u) g(s_u); θ) g(s_l); θ)
+    # C * G(s_l; θ)^(l-1) * [G(s_u; θ) - G(s_l; θ)]^(u - l - 1) * (1 - G(s_u; θ))^(n-u) * g(s_u; θ) * g(s_l; θ)
+
     # where
     # θ is the parameter (vector) to be chosen,
     # G(.; θ) is the model CDF,
@@ -45,32 +47,32 @@ def order_statistic_class_likelihood(
 
     C = comb(n, u, exact=True) * comb(u, l, exact=True) * l * (u - l)
 
+    model = norm(loc=mu, scale=sigma)
+
     if log:
         # l_k(θ, s, n) =
-        lower_log_pdf, upper_log_pdf = norm.logpdf([s_l, s_u], loc=mu, scale=sigma).flat
-        lower_log_cdf, upper_log_cdf = norm.logcdf([s_l, s_u], loc=mu, scale=sigma).flat
-        lower_cdf, upper_cdf = norm.cdf([s_l, s_u], loc=mu, scale=sigma).flat
-        # (l-1) * log G(s_l; θ)
-        l_term = (l - 1) * lower_log_cdf
-        # + (n-u) * log (1 - G(s_u; θ))
-        u_term = (n - u) * norm.logsf(s_u, loc=mu, scale=sigma)
-        # + (u - l - 1) * log [G(s_u; θ) - G(s_l; θ)]
-        difference_term = (u - l - 1) * np.log(upper_cdf - lower_cdf)
+        #   log G(s_l; θ) * (l-1)
+        l_term = model.logcdf(s_l) * (l - 1)
+        # + log (1 - G(s_u; θ)) * (n-u)
+        u_term = model.logsf(s_u) * (n - u)
+        # + log [G(s_u; θ) - G(s_l; θ)] * (u - l - 1)
+        difference_term = np.log(max(model.cdf(s_u) - model.cdf(s_l), 1e-16)) * (u - l - 1)
+        # + log g(s_l; θ) + log g(s_u; θ)
+        pdf_term = model.logpdf(s_l) + model.logpdf(s_u)
 
-        return l_term + difference_term + u_term + lower_log_pdf + upper_log_pdf + np.log(C)
+        return l_term + difference_term + u_term + pdf_term + np.log(C)
     else:
         # L_k(θ, s, n) =
-        lower_pdf, upper_pdf = norm.pdf([s_l, s_u], loc=mu, scale=sigma).flat
-        lower_cdf, upper_cdf = norm.cdf([s_l, s_u], loc=mu, scale=sigma).flat
-        # G(s_l; θ)^(l-1)
-        l_term = lower_cdf**(l-1) if l - 1 > 0 else 1
+        #   G(s_l; θ)^(l-1)
+        l_term = model.cdf(s_l)**(l - 1) if l - 1 > 0 else 1
         # * (1 - G(s_u; θ))^(n-u)
-        u_term = norm.sf(s_u, loc=mu, scale=sigma)**(n-u) if n - u > 0 else 1
+        u_term = model.sf(s_u)**(n - u) if n - u > 0 else 1
         # * [G(s_u; θ) - G(s_l; θ)]^(u - l - 1)
-        difference_term = (upper_cdf - lower_cdf) ** (u - l - 1) if u - l - 1 > 0 else 1
+        difference_term = (model.cdf(s_u) - model.cdf(s_l))**(u - l - 1) if u - l - 1 > 0 else 1
+        # * g(s_l; θ) * g(s_u; θ)
+        pdf_term = model.pdf(s_l) * model.pdf(s_u)
 
-        # G(s_l; θ)^(l-1) * [G(s_u; θ) - G(s_l; θ)]^(u - l - 1) * (1 - G(s_u; θ))^(n-u) g(s_u); θ) g(s_l); θ)
-        return l_term * difference_term * u_term * lower_pdf * upper_pdf * C
+        return l_term * difference_term * u_term * pdf_term * C
 
 
 def order_statistic_symbolic_likelihood(
@@ -81,7 +83,5 @@ def order_statistic_symbolic_likelihood(
 ) -> float:
     if len(symbols) == 0:
         return 0 if log else 1
-    if sigma < 0:
-        sigma = -sigma
     terms = [order_statistic_class_likelihood(s, mu, sigma, log=log) for s in symbols]
     return sum(terms) if log else np.product(terms)

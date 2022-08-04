@@ -1,5 +1,5 @@
 """
-Fitting a normal distribution by MLE parameter estimation to symbols
+Fitting a normal distribution by MLE parameter estimation to normal symbols
 
 Mean
 
@@ -11,7 +11,7 @@ and n_k is the number of points in the symbol
 
 ----------------------------------------------------------------
 
-Variance
+Variance [** original formulation; see bias methods below for more details **]
 
 The estimator of the variance parameter of a normal distribution
 in terms of symbol distributions is given by the following weighted sum:
@@ -24,30 +24,13 @@ NOTE: this estimator is a little bit biased, just like the usual MLE of variance
 for a normal distribution.
 """
 from enum import Enum, unique
-from typing import Sequence
+from typing import Sequence, Callable
 
 from symbols.normal import NormalSymbol
-from symbols.uniform import UniformSymbol
-
-
-def uniform_symbols_mean_mle(symbols: Sequence[UniformSymbol]) -> float:
-    N = sum(s.n for s in symbols)
-
-    # mean of uniform(a, b) is (a + b)/2
-    return sum(n / N * (a + b) / 2 for (a, b, n) in symbols)
-
-
-def uniform_symbols_variance_mle(symbols: Sequence[UniformSymbol]) -> float:
-    N = sum(s.n for s in symbols)
-    m = uniform_symbols_mean_mle(symbols)
-
-    # variance of uniform(a, b) is (b - a)^2 / 12
-    return sum(n / N * ((1 - 1 / N) * (b - a) ** 2 / 12 + ((a + b) / 2 - m) ** 2) for (a, b, n) in symbols)
 
 
 def normal_symbols_mean_mle(symbols: Sequence[NormalSymbol]) -> float:
     """
-    
     µ̂ = sum { n_k / N * m_k },
     where m_k is class mean and n_k is class size, N is sum of class sizes
 
@@ -67,12 +50,12 @@ class VarianceBiasType(Enum):
     M3_UNBIASED_ESTIMATOR = "method3_unbiased_estimator"
 
 
-def normal_symbols_variance_mle(symbols: Sequence[NormalSymbol], bias_type: VarianceBiasType) -> float:
-    """
-    σ̂^2 = sum { s_k * b1 + (m_k - µ̂)^2 * b2 },
-    where m_k and s_k are class mean and variance respectively, N is sum of class sizes,
-    µ̂ is defined in normal_symbols_mean_mle, and b1 and b2 are bias factors.
+BiasFn = Callable[[int, int], float]
 
+
+# noinspection PyPep8Naming
+def make_bias_functions(bias_type: VarianceBiasType) -> tuple[BiasFn, BiasFn]:
+    """
     M1_BIASED_SUMMARY: b1 = n_k/N, b2 = n_k/N
     Equivalent to σ̂^2 = sum { n_k / N * (s_k + (m_k - µ̂)^2) },
     Derived from the original formulation of Method 1 which used the biased sample variance
@@ -93,6 +76,34 @@ def normal_symbols_variance_mle(symbols: Sequence[NormalSymbol], bias_type: Vari
     Equivalent to σ̂^2 = sum { n_k / N * (s_k * (1 - 1/N) + (m_k - µ̂)^2) },
     Derived by applying Method 3 with the bias-corrected ML estimator for variance.
 
+
+    :param bias_type: Which bias method to use
+    :return: Tuple of bias functions b1(.) and b2(.)
+    """
+
+    # noinspection PyPep8Naming
+    def proportional(n_k: int, N: int) -> float:
+        return n_k / N
+
+    match bias_type:
+        case VarianceBiasType.M1_BIASED_SUMMARY:
+            return proportional, proportional
+        case VarianceBiasType.M1_UNBIASED_SUMMARY:
+            return lambda n_k, N: (n_k - 1) / N, proportional
+        case VarianceBiasType.M3_BIASED_ESTIMATOR:
+            return lambda n_k, N: (n_k / N) * (1 - 1 / N), proportional
+        case VarianceBiasType.M3_UNBIASED_ESTIMATOR:
+            return proportional, lambda n_k, N: n_k / (N - 1)
+        case _:
+            raise ValueError(f"Unrecognised bias type: {bias_type}")
+
+
+def normal_symbols_variance_mle(symbols: Sequence[NormalSymbol], bias_type: VarianceBiasType) -> float:
+    """
+    σ̂^2 = sum { s_k * b1 + (m_k - µ̂)^2 * b2 },
+    where m_k and s_k are class mean and variance respectively, N is sum of class sizes,
+    µ̂ is defined in normal_symbols_mean_mle, and b1 and b2 are bias factors (see above)
+
     :param symbols: Symbolic data
     :param bias_type: See above
     :return: Estimator of variance parameter of normal distribution model
@@ -100,31 +111,6 @@ def normal_symbols_variance_mle(symbols: Sequence[NormalSymbol], bias_type: Vari
     N = sum(s.n for s in symbols)
     m = normal_symbols_mean_mle(symbols)
 
-    # define bias factors
-    def b1(n_k: float) -> float:
-        match bias_type:
-            case VarianceBiasType.M1_BIASED_SUMMARY:
-                return n_k / N
-            case VarianceBiasType.M1_UNBIASED_SUMMARY:
-                return (n_k - 1) / N
-            case VarianceBiasType.M3_BIASED_ESTIMATOR:
-                return (n_k / N) * (1 - 1/N)
-            case VarianceBiasType.M3_UNBIASED_ESTIMATOR:
-                return n_k / N
-            case _:
-                raise ValueError(f"Unrecognised bias type: {bias_type}")
+    b1, b2 = make_bias_functions(bias_type)
 
-    def b2(n_k: float) -> float:
-        match bias_type:
-            case VarianceBiasType.M1_BIASED_SUMMARY:
-                return n_k / N
-            case VarianceBiasType.M1_UNBIASED_SUMMARY:
-                return n_k / N
-            case VarianceBiasType.M3_BIASED_ESTIMATOR:
-                return n_k / N
-            case VarianceBiasType.M3_UNBIASED_ESTIMATOR:
-                return n_k / (N - 1)
-            case _:
-                raise ValueError(f"Unrecognised bias type: {bias_type}")
-
-    return sum(b1(n)*sigma**2 + b2(n)*(mu - m)**2 for (mu, sigma, n) in symbols)
+    return sum(b1(n, N) * sigma ** 2 + b2(n, N) * (mu - m) ** 2 for (mu, sigma, n) in symbols)

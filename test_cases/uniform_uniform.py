@@ -3,7 +3,7 @@ from typing import Sequence
 import matplotlib.pyplot as plt
 
 from helper.utils import linspace_dense
-from method3.models.uniform import uniform_symbol_min_cdf, uniform_symbol_max_cdf, \
+from method3.uniform_model.uniform_symbols import uniform_symbol_min_cdf, uniform_symbol_max_cdf, \
     uniform_symbol_min_mle, uniform_symbol_max_mle
 from symbols.common import symbols_heuristic_min_max, plot_symbols
 from symbols.uniform import UniformSymbol
