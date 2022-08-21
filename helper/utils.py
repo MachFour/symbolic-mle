@@ -98,3 +98,18 @@ def maximise_in_grid(
     return max_value, max_a, max_b
 
 
+def log_diff(log_p, log_q):
+    """
+    If p > q then log(p - q) = log(p) + log(1 - exp(log(q) - log(p))),
+    so we can express log(p - q) in terms of log(p) and log(q)
+
+    Sources:
+    https://github.com/scipy/scipy/issues/13923
+    https://www3.nd.edu/~dchiang/teaching/nlp/2018/notes/chapter2v1.pdf
+
+    :param log_p: Log of p value
+    :param log_q: Log of q value
+    :return:  log(p - q)
+    """
+    return log_p + np.log1p(-np.exp(log_q - log_p))
+

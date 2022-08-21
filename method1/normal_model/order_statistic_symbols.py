@@ -4,6 +4,7 @@ import numpy as np
 from scipy.special import comb
 from scipy.stats import norm
 
+from helper.utils import log_diff
 from symbols.order_statistic import OrderStatisticSymbol
 
 
@@ -56,7 +57,7 @@ def order_statistic_class_likelihood(
         # + log (1 - G(s_u; θ)) * (n-u)
         u_term = model.logsf(s_u) * (n - u)
         # + log [G(s_u; θ) - G(s_l; θ)] * (u - l - 1)
-        difference_term = np.log(max(model.cdf(s_u) - model.cdf(s_l), 1e-16)) * (u - l - 1)
+        difference_term = log_diff(model.logcdf(s_u), model.logcdf(s_l)) * (u - l - 1)
         # + log g(s_l; θ) + log g(s_u; θ)
         pdf_term = model.logpdf(s_l) + model.logpdf(s_u)
 

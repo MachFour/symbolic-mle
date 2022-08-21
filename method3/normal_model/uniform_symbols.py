@@ -19,5 +19,3 @@ def uniform_symbols_variance_mle(symbols: Sequence[UniformSymbol]) -> float:
 
     # variance of uniform(a, b) is (b - a)^2 / 12
     return sum(n / N * ((1 - 1 / N) * (b - a) ** 2 / 12 + ((a + b) / 2 - m) ** 2) for (a, b, n) in symbols)
-
-

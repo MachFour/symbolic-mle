@@ -144,13 +144,9 @@ def plot_uniform_normal_method_comparison(
 
 
 def main():
-    # Each column forms one symbol
-    # m = [-15, -6, 10, 30]
-    # s = [  6,  7, 8, 6.5]
-    # n = [  4, 43, 2,  12]
     normal_symbols = (
         NormalSymbol(mu=0, sigma=1, n=20),
-        NormalSymbol(mu=50, sigma=100, n=50),
+        NormalSymbol(mu=50, sigma=10, n=50),
         NormalSymbol(mu=100, sigma=5, n=5)
     )
 
