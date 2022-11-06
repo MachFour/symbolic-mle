@@ -1,0 +1,148 @@
+\documentclass[11pt,paper=a4,numbers=noendperiod]{scrartcl} % headings=small,
+\KOMAoptions{DIV=12}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+
+\usepackage[utf8]{inputenc}
+
+\usepackage{hyperref}
+\hypersetup{colorlinks=true}
+
+% only number down to 'part' (i.e. don't number sections or below)
+\setcounter{secnumdepth}{\partnumdepth}
+
+%\addtolength{\topmargin}{-4ex}
+\addtolength{\textheight}{8ex}
+
+% disable paragraph indent
+\setlength{\parindent}{0pt}
+\usepackage{parskip}
+
+\input{latex-macros}
+
+\title{SDA with parametric distributions}
+\subtitle{Summary of proposed techniques}
+\author{Max Fisher}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+Hi my name is Max and here is what I have for show and tell this week.
+
+Suppose that $\mathbf{X} = (X_1, \ldots, X_N)$ are independent and identically distributed
+random variables defined on a common sample space $\samplespace$. The true
+distribution of the $X_j$ is unknown, but it is to be modelled by a member of a
+fixed parametric family $\modelfamily = \{G_\theta\}_{\theta \in \Theta}$, where
+each $G_\theta$ admits a probability density or mass function $g(\cdot; \theta)$.
+
+Let $\dataset = (x_1, \ldots, x_N)$ be a realisation of $X_1, \ldots, X_N$.
+The set $\dataset$ is termed the microdata. The task is to develop a method of
+summarising $\dataset$ to meet the following two goals:
+\begin{enumerate}
+    \item A high level of information reduction. The summary should use many
+        fewer parameters to describe than the number of points in $\dataset$.
+    \item Ability to use the only summary to choose a model distribution $G^{*}$
+        from $\modelfamily$ that is somehow `good enough' compared to one that
+        would have been chosen having full knowledge of $\dataset$ itself.
+\end{enumerate}
+
+\section{Method 1: Likelihood integration given observed summary data}
+
+If, using the summary function $h_k: \v{x}_k \mapsto s_k$, each class
+$\class_k$ is summarised by the symbol $\symbol_k$ = $(s_k, n_k)$,
+then the likelihood function for symbolic data $\v{s} = (s_1, \ldots, s_C)$
+is given by
+\begin{equation}
+    \L^{\symbol}_k(\theta; s_k, n_k)
+    = \int_{\region_k} \prod_{i=1}^{n_k} {g(x_{k,i}; \theta)}
+    \; d\v{x}_k
+    \label{eq:symbolic-class-ll-summary-fn}
+\end{equation}
+where $\region_k$ denotes integration over the region 
+\begin{equation*}
+    \region_k = \left\{
+        \v{x}_k \in \samplespace^{n_k}: h_k(\v{x}_k) = s_k
+            \right\} \subseteq \samplespace^{n_k}.
+\end{equation*}
+Further, the overall likelihood is
+\begin{equation*}
+    \L^{\symbol}(\theta; \v{s}, \v{n})
+        = \prod_{k=1}^C \L^{\symbol}_k(\theta; s_k, n_k)
+\end{equation*}
+and the maximum likelihood estimate for the model parameter $\theta$ of
+$G_\theta$ is given by
+\begin{align}
+    \hat{\theta}_{\symbol}
+    &= \argmax \, \L^{\symbol}(\theta; \v{s}, \v{n}) \\
+    &= \argmax \, \sum_{k=1}^C \ell_k^{\symbol}(\theta; \v{s}, \v{n}).
+\end{align}
+\subsection{Notes}
+
+\section{Method 2: Minimisation of weighted K-L divergence}
+\subsection{Notes}
+
+\section{Method 3: Expected inference on random sample}
+\subsection{Notes}
+
+\section{Model fitting/testing}
+\begin{itemize}
+    \item Need method that does not require homogeneous family of symbols; i.e.
+        can fit model to any collection of symbols. This kind of makes the
+        `preset' results redundant and focuses more on the computation, which
+        makes Methods 2 and 3 seem more applealing, less so Method 1. Method 3
+        is kind of dumb/obvious but also very intuitive
+    \item Method 1 computation: Do a massive integral
+    \item Method 2 computation: find model parameters to minimise weighted sum
+        of cross entropies
+    \item Method 3 computation [kind of inefficient] Repeated simulations of
+        original dataset by iid sampling according to symbols' summary
+        distribution and size. For each simulation, compute the MLE same
+        distribution as symbols, then compute classical MLE for each sample.
+        Return average of MLEs.
+\end{itemize}
+
+Two different `schools of thought`:
+\begin{enumerate}
+    \item{Microdata assumed iid/homogenous across all classes}
+    \item{Microdata assumed iid homogenous within classes, not necessarily
+        between classes}
+\end{enumerate}
+
+\section{Regression}
+Can't use OLS with no assumptions, as the whole point is to summarise classes
+with parametric distributions.
+\begin{align*}
+    y_i &= \beta_0 + \beta_1 x_i + \epsilon_i \\
+    \epsilon_i &\sim \N(\mu, \sigma^2) \\
+    \epsilon_i &= y_i - \beta_0 - \beta_1 x_i
+\end{align*}
+Issue: don't have $x_i$, $y_i$.
+
+Model classes as either multivariate normal (easy), multivariate t-distribution
+(not as easy) or uniform (independent / trivial regression)
+
+\subsection{Testing / simulation setup}
+\begin{enumerate}
+    \item Define classes - true class distribution + sizes \newline
+        \textbf{(Problem: what if class membership is unknown?)}
+    \item Sample from class distribution to create microdata
+    \item Perform analysis on microdata to get ideal result
+    \item Perform symbolic data analysis on microdata to get model fits
+\end{enumerate}
+
+
+\subsection{Multivariate normal assumption}
+\begin{equation}
+    \left(x_{i, 1}, x_{i, 2}, \ldots, x_{i, k-1}, y_i \right) \sim
+    \N(\v{\mu}, \Sigma)
+\end{equation}
+\begin{equation}
+    \v{\mu}
+\end{equation}
+
+\subsection{Multivariate t assumption}
+
+\end{document}
